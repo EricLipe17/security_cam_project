@@ -28,108 +28,103 @@ sudo apt-get update -qq && sudo apt-get upgrade && sudo apt-get -y install \
   zlib1g-dev
 
 # Make FFMPEG source and bin directories
-mkdir -p $SINGULARITY_FFMPEG $SINGULARITY_FFMPEG_BIN
+mkdir -p FFMPEG_HOME FFMPEG_BIN
 
 # Setup & install FFMPEG dependencies
 sudo apt install libunistring-dev libaom-dev libdav1d-dev
 
 # NASM
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd nasm-2.15.05 && \
 ./autogen.sh && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" ./configure --prefix="$SINGULARITY_FFMPEG_BUILD" --bindir="$SINGULARITY_FFMPEG_BIN/bin" && \
+PATH="FFMPEG_BIN:$PATH" ./configure --prefix="FFMPEG_BUILD" --bindir="FFMPEG_BIN/bin" && \
 make && \
 make install
 
 # libx264
 sudo apt-get install libx264-dev
 
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd x264 && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="$SINGULARITY_FFMPEG_BUILD/lib/pkgconfig" ./configure --prefix="$SINGULARITY_FFMPEG_BUILD" --bindir="$SINGULARITY_FFMPEG_BIN/bin" --enable-static --enable-pic && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="FFMPEG_BUILD/lib/pkgconfig" ./configure --prefix="FFMPEG_BUILD" --bindir="FFMPEG_BIN/bin" --enable-static --enable-pic && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install
 
 # libx265
 sudo apt-get install libx265-dev libnuma-dev
 
 sudo apt-get install libnuma-dev && \
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd multicoreware*/build/linux && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$SINGULARITY_FFMPEG_BUILD" -DENABLE_SHARED=off ../../source && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="FFMPEG_BUILD" -DENABLE_SHARED=off ../../source && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install
 
 # libvpx
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd libvpx && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" ./configure --prefix="$SINGULARITY_FFMPEG_BUILD" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" ./configure --prefix="FFMPEG_BUILD" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install
 
 # libfdk-aac
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd fdk-aac && \
 autoreconf -fiv && \
-./configure --prefix="$SINGULARITY_FFMPEG_BUILD" --disable-shared && \
+./configure --prefix="FFMPEG_BUILD" --disable-shared && \
 make && \
 make install
 
 # libopus
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 cd opus && \
 ./autogen.sh && \
-./configure --prefix="$SINGULARITY_FFMPEG_BUILD" --disable-shared && \
+./configure --prefix="FFMPEG_BUILD" --disable-shared && \
 make && \
 make install
 
 # libaom
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 mkdir -p aom_build && \
 cd aom_build && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$SINGULARITY_FFMPEG_BUILD" -DENABLE_TESTS=OFF -DENABLE_NASM=on ../aom && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="FFMPEG_BUILD" -DENABLE_TESTS=OFF -DENABLE_NASM=on ../aom && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install
 
 # libsvtav1
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 mkdir -p SVT-AV1/build && \
 cd SVT-AV1/build && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$SINGULARITY_FFMPEG_BUILD" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEC=OFF -DBUILD_SHARED_LIBS=OFF .. && \
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="FFMPEG_BUILD" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEC=OFF -DBUILD_SHARED_LIBS=OFF .. && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install
 
 # libdav1d
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 mkdir -p dav1d/build && \
 cd dav1d/build && \
-meson setup -Denable_tools=false -Denable_tests=false --default-library=static .. --prefix "$SINGULARITY_FFMPEG_BUILD" --libdir="$SINGULARITY_FFMPEG_BUILD/lib" && \
+meson setup -Denable_tools=false -Denable_tests=false --default-library=static .. --prefix "FFMPEG_BUILD" --libdir="FFMPEG_BUILD/lib" && \
 ninja && \
 ninja install
 
 # libvmaf
-cd $SINGULARITY_FFMPEG && \
+cd FFMPEG_HOME && \
 mkdir -p vmaf-2.1.1/libvmaf/build &&\
 cd vmaf-2.1.1/libvmaf/build && \
-meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --default-library=static .. --prefix "$SINGULARITY_FFMPEG_BUILD" --bindir="$SINGULARITY_FFMPEG_BIN/bin" --libdir="$SINGULARITY_FFMPEG_BUILD/lib" && \
+meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --default-library=static .. --prefix "FFMPEG_BUILD" --bindir="FFMPEG_BIN/bin" --libdir="FFMPEG_BUILD/lib" && \
 ninja && \
 ninja install
 
-# NVIDIA Codec headers
-cd SINGULARITY_AV_THIRD_PARTY/nv-codec
-make
-sudo make install
-
 # Build FFMPEG
-cd $SINGULARITY_FFMPEG
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="$SINGULARITY_FFMPEG_BUILD/lib/pkgconfig" ./configure \
-  --prefix="$SINGULARITY_FFMPEG_BUILD" \
+cd FFMPEG_HOME
+PATH="FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="FFMPEG_BUILD/lib/pkgconfig" ./configure \
+  --prefix="FFMPEG_BUILD" \
   --pkg-config-flags="--static" \
-  --extra-cflags="-I$SINGULARITY_FFMPEG_BUILD/include" \
-  --extra-ldflags="-L$SINGULARITY_FFMPEG_BUILD/lib" \
+  --extra-cflags="-IFFMPEG_BUILD/include" \
+  --extra-ldflags="-LFFMPEG_BUILD/lib" \
   --extra-libs="-lpthread -lm" \
   --ld="g++" \
-  --bindir="$SINGULARITY_FFMPEG_BIN" \
+  --bindir="FFMPEG_BIN" \
   --enable-gpl \
   --enable-gnutls \
   --enable-libaom \
@@ -147,6 +142,6 @@ PATH="$SINGULARITY_FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="$SINGULARITY_FFMPEG_BUILD/
   --enable-nonfree \
   --enable-demuxer=rtsp \
   --enable-nvenc &&
-PATH="$SINGULARITY_FFMPEG_BIN:$PATH" make && \
+PATH="FFMPEG_BIN:$PATH" make && \
 make install && \
 hash -r

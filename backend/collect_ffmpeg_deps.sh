@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd $SINGULARITY_FFMPEG
+pushd $FFMPEG_HOME
 
 # NASM
 wget https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.bz2 && \
