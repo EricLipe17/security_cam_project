@@ -13,6 +13,9 @@ echo 'export FFMPEG_HOME="$AV_THIRD_PARTY/ffmpeg"' >> ~/.bashrc
 echo 'export FFMPEG_BUILD="$FFMPEG_HOME/build"' >> ~/.bashrc
 echo 'export FFMPEG_BIN="$FFMPEG_BUILD/bin"' >> ~/.bashrc
 
+# NVENC
+echo 'export NVENC_HOME="$AV_THIRD_PARTY/nvenc"' >> ~/.bashrc
+
 # GLEW
 echo 'export GLEW_DEST="$GLFW_THIRD_PARTY/glew"' >> ~/.bashrc
 

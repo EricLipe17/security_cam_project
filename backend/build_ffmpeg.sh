@@ -115,6 +115,11 @@ meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --defau
 ninja && \
 ninja install
 
+# nvenc
+cd "$NVENC_HOME" && \
+make && /
+sudo make install
+
 # Build FFMPEG
 cd $FFMPEG_HOME
 PATH="$FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="$FFMPEG_BUILD/lib/pkgconfig" ./configure \
