@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
      * MP4 - MP4
      */
     StreamingParams sp = {0};
-    sp.m_nRemuxAudio = 1;
+    sp.m_nRemuxAudio = 0;
     sp.m_nRemuxVideo = 0;
     sp.m_nVideoID = AV_CODEC_ID_HEVC;
     sp.m_pCodecPrivKey = "x265-params";

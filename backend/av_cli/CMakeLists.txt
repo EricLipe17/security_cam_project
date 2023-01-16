@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(singularity-prog_test VERSION 0.0.1 LANGUAGES CXX)
+project(av_cli VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-D__STDC_CONSTANT_MACROS")
@@ -21,5 +21,5 @@ target_include_directories(${PROJECT_NAME}  PRIVATE
         )
 
 target_link_libraries(${PROJECT_NAME}
-        singularity-av
+        av
         )

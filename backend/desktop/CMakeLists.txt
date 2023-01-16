@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(singularity-desktop VERSION 0.0.1 LANGUAGES CXX)
+project(gui VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-D__STDC_CONSTANT_MACROS")
@@ -32,5 +32,5 @@ target_link_libraries(${PROJECT_NAME}
         GLU
         X11
         GLEW
-        singularity-av
+        av
 )
