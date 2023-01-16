@@ -26,7 +26,7 @@ set(HEADERS include/AV.h
 set(SRC src/AVIO.c
         src/RtspStream.c
         src/Transcode.c
-        include/StreamWriter.h src/StreamWriter.c)
+        include/StreamWriter.h src/StreamWriter.c include/NewTranscode.h src/NewTranscode.c)
 
 add_library(${PROJECT_NAME} STATIC
         ${SRC}
