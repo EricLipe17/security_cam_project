@@ -218,49 +218,54 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     open_output(_pT->m_pOutStreamCtx, _pT->m_pInStreamCtx);
 }
 
-int flush_encoder(unsigned int stream_index)
+int flush_encoder(TranscodeContext* _pT, int _nSteamIndex)
 {
-    if (!(stream_ctx[stream_index].enc_ctx->codec->capabilities &
+    if (!(_pT->m_pOutStreamCtx->m_pArrCodecCtx[_nSteamIndex]->codec->capabilities &
           AV_CODEC_CAP_DELAY))
         return 0;
 
-    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", stream_index);
-    return write_frame(stream_index, 1);
+    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nSteamIndex);
+    return write_frame(_pT, _nSteamIndex, 1);
 }
 
-int write_frame()
+int write_frame(TranscodeContext* _pT, int _nSteamIndex, int _nFlush)
 {
-    StreamContext *stream = &stream_ctx[stream_index];
-    FilteringContext *filter = &filter_ctx[stream_index];
-    AVFrame *filt_frame = flush ? NULL : filter->filtered_frame;
-    AVPacket *enc_pkt = filter->enc_pkt;
+    StreamContext* pStream = _pT->m_pOutStreamCtx;
+    AVFrame *pFrame = _nFlush ? NULL : pStream->m_pFrame;
+    AVPacket *pPkt = av_packet_alloc();
     int ret;
 
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
     /* encode filtered frame */
-    av_packet_unref(enc_pkt);
+    av_packet_unref(pPkt);
 
-    ret = avcodec_send_frame(stream->enc_ctx, filt_frame);
+    ret = avcodec_send_frame(pStream->m_pArrCodecCtx[_nSteamIndex], pFrame);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_packet_free(&pPkt);
         return ret;
+    }
 
     while (ret >= 0) {
-        ret = avcodec_receive_packet(stream->enc_ctx, enc_pkt);
+        ret = avcodec_receive_packet(pStream->m_pArrCodecCtx[_nSteamIndex], pPkt);
 
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            av_packet_free(&pPkt);
             return 0;
+        }
 
         /* prepare packet for muxing */
-        enc_pkt->stream_index = stream_index;
-        av_packet_rescale_ts(enc_pkt,
-                             stream->enc_ctx->time_base,
-                             ofmt_ctx->streams[stream_index]->time_base);
+        pPkt->stream_index = _nSteamIndex;
+        av_packet_rescale_ts(pPkt,
+                             pStream->m_pArrCodecCtx[_nSteamIndex]->time_base,
+                             _pT->m_pOutStreamCtx->m_pFmtCtx->streams[_nSteamIndex]->time_base);
 
         av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
         /* mux encoded frame */
-        ret = av_interleaved_write_frame(ofmt_ctx, enc_pkt);
+        ret = av_interleaved_write_frame(_pT->m_pOutStreamCtx->m_pFmtCtx, pPkt);
     }
+
+    av_packet_free(&pPkt);
 
     return ret;
 }

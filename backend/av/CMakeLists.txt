@@ -21,12 +21,14 @@ set(HEADERS include/AV.h
         include/RtspStream.h
         include/AVUtil.h
         include/Transcode.h
+        include/StreamWriter.h
         )
 
 set(SRC src/AVIO.c
         src/RtspStream.c
         src/Transcode.c
-        include/StreamWriter.h src/StreamWriter.c include/NewTranscode.h src/NewTranscode.c)
+        src/StreamWriter.c
+        )
 
 add_library(${PROJECT_NAME} STATIC
         ${SRC}
