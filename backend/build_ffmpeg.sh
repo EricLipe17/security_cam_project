@@ -31,7 +31,7 @@ sudo apt-get update -qq && sudo apt-get upgrade && sudo apt-get -y install \
 mkdir -p $FFMPEG_HOME $FFMPEG_BIN
 
 # Setup & install FFMPEG dependencies
-sudo apt install libunistring-dev libaom-dev libdav1d-dev
+sudo apt install libunistring-dev
 
 # NASM
 cd $FFMPEG_HOME && \
