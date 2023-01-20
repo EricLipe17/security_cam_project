@@ -18,16 +18,12 @@ pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
 
 set(HEADERS include/AV.h
         include/AVIO.h
-        include/RtspStream.h
         include/AVUtil.h
         include/Transcode.h
-        include/StreamWriter.h
         )
 
 set(SRC src/AVIO.c
-        src/RtspStream.c
         src/Transcode.c
-        src/StreamWriter.c
         )
 
 add_library(${PROJECT_NAME} STATIC

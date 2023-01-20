@@ -21,6 +21,26 @@ int fill_stream_info2(AVStream *avs, AVCodec **avc, AVCodecContext **avcc) {
 
 int main(int argc, char *argv[])
 {
+    TranscodeContext* pTranscoder = alloc_transcoder();
+    StreamParams inParams;
+    StreamParams outParams;
+    inParams.m_pFQN = "xmas.mp4";
+    outParams.m_pFQN = "xmas_t.mp4";
+
+    init_transcoder(pTranscoder, &inParams, &outParams);
+    int ret;
+    do {
+        ret = write_frame(pTranscoder, 0);
+    } while (ret >= 0);
+
+    for (int i = 0; i < pTranscoder->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
+        flush_encoder(pTranscoder, i);
+    }
+
+    write_trailer(pTranscoder);
+
+    free_transcoder(pTranscoder);
+
     return 0;
 }
 
