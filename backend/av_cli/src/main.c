@@ -31,13 +31,15 @@ int main(int argc, char *argv[])
     int ret;
     do {
         ret = write_frame(pTranscoder, 0);
-    } while (ret >= 0);
+    } while (ret >= 0 || ret == AVERROR(EAGAIN));
 
     for (int i = 0; i < pTranscoder->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
-        flush_encoder(pTranscoder, i);
+        ret = flush_encoder(pTranscoder, i);
+        av_log(NULL, AV_LOG_INFO, "Info: %s\n", av_err2str(ret));
     }
 
-    write_trailer(pTranscoder);
+    ret = write_trailer(pTranscoder);
+    av_log(NULL, AV_LOG_INFO, "Info: %s\n", av_err2str(ret));
 
     free_transcoder(pTranscoder);
 

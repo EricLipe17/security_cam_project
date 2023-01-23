@@ -1,15 +1,36 @@
 #include "Transcode.h"
 
+StreamContext* alloc_stream_context()
+{
+    StreamContext* pS = malloc(sizeof(StreamContext));
+    pS->m_pFmtCtx = avformat_alloc_context();
+    pS->m_pPkt = av_packet_alloc();
+    pS->m_pFrame = av_frame_alloc();
+    return pS;
+}
+
 TranscodeContext* alloc_transcoder()
 {
     TranscodeContext* pT = malloc(sizeof(TranscodeContext));
-    pT->m_pDecodeCtx = malloc(sizeof(StreamContext));
-    pT->m_pEncodeCtx = malloc(sizeof(StreamContext));
+    pT->m_pDecodeCtx = alloc_stream_context();
+    pT->m_pEncodeCtx = alloc_stream_context();
     return pT;
 }
 
 void free_transcoder(TranscodeContext* _pT)
 {
+    // Free CodecContexts for all
+    for (int i = 0; i < _pT->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
+        avcodec_free_context(&_pT->m_pDecodeCtx->m_pArrCodecCtx[i]);
+        avcodec_free_context(&_pT->m_pEncodeCtx->m_pArrCodecCtx[i]);
+        _pT->m_pDecodeCtx->m_pArrCodecCtx[i] = NULL;
+        _pT->m_pEncodeCtx->m_pArrCodecCtx[i] = NULL;
+    }
+    av_free(_pT->m_pDecodeCtx->m_pArrCodecCtx);
+    _pT->m_pDecodeCtx->m_pArrCodecCtx = NULL;
+    av_free(_pT->m_pEncodeCtx->m_pArrCodecCtx);
+    _pT->m_pEncodeCtx->m_pArrCodecCtx = NULL;
+
     // Free input resources
     avformat_free_context(_pT->m_pDecodeCtx->m_pFmtCtx);
     _pT->m_pDecodeCtx->m_pFmtCtx = NULL;
@@ -29,14 +50,6 @@ void free_transcoder(TranscodeContext* _pT)
 
     av_packet_free(&_pT->m_pEncodeCtx->m_pPkt);
     _pT->m_pEncodeCtx->m_pPkt = NULL;
-
-    // Free CodecContexts for all
-    for (int i = 0; i < _pT->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
-        avcodec_free_context(&_pT->m_pDecodeCtx->m_pArrCodecCtx[i]);
-        avcodec_free_context(&_pT->m_pEncodeCtx->m_pArrCodecCtx[i]);
-        _pT->m_pDecodeCtx->m_pArrCodecCtx[i] = NULL;
-        _pT->m_pEncodeCtx->m_pArrCodecCtx[i] = NULL;
-    }
 
     // Free stream contexts
     free(_pT->m_pDecodeCtx);
@@ -253,7 +266,7 @@ int receive_frame(StreamContext* _pS, int* _nStreamIndex_)
 
     // Receive frame from decoder
     av_packet_unref(_pS->m_pPkt);
-    ret = av_read_frame(_pS->m_pFmtCtx, _pS->m_pPkt);
+    av_read_frame(_pS->m_pFmtCtx, _pS->m_pPkt);
     *_nStreamIndex_ = _pS->m_pPkt->stream_index;
     av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", *_nStreamIndex_);
     av_packet_rescale_ts(_pS->m_pPkt,
@@ -303,23 +316,26 @@ int write_frame(TranscodeContext* _pT, int _nFlush)
     int ret;
     int nStreamIndex;
 
+    av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
+
+    ret = receive_frame(_pT->m_pDecodeCtx, &nStreamIndex);
+
     AVCodecContext* pEncoder= _pT->m_pEncodeCtx->m_pArrCodecCtx[nStreamIndex];
     AVCodecContext* pDecoder= _pT->m_pDecodeCtx->m_pArrCodecCtx[nStreamIndex];
 
     StreamContext* pDecodeStream = _pT->m_pDecodeCtx;
     StreamContext* pEncodeStream = _pT->m_pEncodeCtx;
 
-    AVFrame *pFrame = _nFlush ? NULL : _pT->m_pEncodeCtx->m_pFrame;
-
-    av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
-
-    ret = receive_frame(_pT->m_pDecodeCtx, &nStreamIndex);
     while (ret >= 0) {
         ret = avcodec_receive_frame(pDecoder, pDecodeStream->m_pFrame);
-        if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
+        if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
+            av_log(NULL, AV_LOG_INFO, "%s.\n", av_err2str(ret));
             break;
-        else if (ret < 0)
+        }
+        else if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error: %s", av_err2str(ret));
             return ret;
+        }
 
         pDecodeStream->m_pFrame->pts = pDecodeStream->m_pFrame->best_effort_timestamp;
         internal_write_frame(pEncodeStream, pEncoder,
@@ -331,6 +347,6 @@ int write_frame(TranscodeContext* _pT, int _nFlush)
 
 int write_trailer(TranscodeContext* _pT)
 {
-    av_write_trailer(_pT->m_pEncodeCtx->m_pFmtCtx);
+    return av_write_trailer(_pT->m_pEncodeCtx->m_pFmtCtx);
 }
 
