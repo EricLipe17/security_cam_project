@@ -27,5 +27,5 @@ TranscodeContext* alloc_transcoder();
 void free_transcoder(TranscodeContext* _pT);
 void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _pOut);
 int flush_encoder(TranscodeContext* _pT, int _nSteamIndex);
-int write_frame(TranscodeContext* _pT, int _nFlush);
+int write_frame(TranscodeContext* _pT);
 int write_trailer(TranscodeContext* _pT);

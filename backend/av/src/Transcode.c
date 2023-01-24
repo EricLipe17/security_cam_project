@@ -250,16 +250,6 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx);
 }
 
-int flush_encoder(TranscodeContext* _pT, int _nSteamIndex)
-{
-    if (!(_pT->m_pEncodeCtx->m_pArrCodecCtx[_nSteamIndex]->codec->capabilities &
-          AV_CODEC_CAP_DELAY))
-        return 0;
-
-    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nSteamIndex);
-    return write_frame(_pT, _nSteamIndex);
-}
-
 int receive_frame(StreamContext* _pS, int* _nStreamIndex_)
 {
     int ret;
@@ -311,7 +301,21 @@ int internal_write_frame(StreamContext* pStreamCtx, AVCodecContext* _pEncoder,
     return ret;
 }
 
-int write_frame(TranscodeContext* _pT, int _nFlush)
+int flush_encoder(TranscodeContext* _pT, int _nSteamIndex)
+{
+    if (!(_pT->m_pEncodeCtx->m_pArrCodecCtx[_nSteamIndex]->codec->capabilities &
+          AV_CODEC_CAP_DELAY))
+        return 0;
+
+    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nSteamIndex);
+
+    AVCodecContext* pEncoder= _pT->m_pEncodeCtx->m_pArrCodecCtx[_nSteamIndex];
+    StreamContext* pEncodeStream = _pT->m_pEncodeCtx;
+    return internal_write_frame(pEncodeStream, pEncoder,
+                         NULL, _nSteamIndex);
+}
+
+int write_frame(TranscodeContext* _pT)
 {
     int ret;
     int nStreamIndex;

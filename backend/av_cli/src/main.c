@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     init_transcoder(pTranscoder, &inParams, &outParams);
     int ret;
     do {
-        ret = write_frame(pTranscoder, 0);
+        ret = write_frame(pTranscoder);
     } while (ret >= 0 || ret == AVERROR(EAGAIN));
 
     for (int i = 0; i < pTranscoder->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
