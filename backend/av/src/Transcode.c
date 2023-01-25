@@ -1,6 +1,6 @@
 #include "Transcode.h"
 
-StreamContext* alloc_stream_context()
+StreamContext* internal_alloc_stream_context()
 {
     StreamContext* pS = malloc(sizeof(StreamContext));
     pS->m_pFmtCtx = avformat_alloc_context();
@@ -9,11 +9,20 @@ StreamContext* alloc_stream_context()
     return pS;
 }
 
+EncodeOptions* internal_alloc_encode_options()
+{
+    EncodeOptions* pOpts = malloc(sizeof(EncodeOptions));
+    pOpts->m_pMuxerOptions = NULL;
+    pOpts->m_nVideoCodecID = AV_CODEC_ID_H264;
+    pOpts->m_nAudioCodecID = AV_CODEC_ID_AAC;
+}
+
 TranscodeContext* alloc_transcoder()
 {
     TranscodeContext* pT = malloc(sizeof(TranscodeContext));
-    pT->m_pDecodeCtx = alloc_stream_context();
-    pT->m_pEncodeCtx = alloc_stream_context();
+    pT->m_pDecodeCtx = internal_alloc_stream_context();
+    pT->m_pEncodeCtx = internal_alloc_stream_context();
+    pT->m_pOpts = internal_alloc_encode_options();
     return pT;
 }
 
@@ -56,6 +65,11 @@ void free_transcoder(TranscodeContext* _pT)
     _pT->m_pDecodeCtx = NULL;
     free(_pT->m_pEncodeCtx);
     _pT->m_pEncodeCtx = NULL;
+
+    // Free muxer opts
+    av_dict_free(&_pT->m_pOpts->m_pMuxerOptions);
+    _pT->m_pOpts->m_pMuxerOptions = NULL;
+    free(_pT->m_pOpts);
 
     // Free transcoder instance
     free(_pT);
@@ -250,7 +264,7 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx);
 }
 
-int receive_frame(StreamContext* _pS, int* _nStreamIndex_)
+int internal_receive_frame(StreamContext* _pS, int* _nStreamIndex_)
 {
     int ret;
 
@@ -322,7 +336,7 @@ int write_frame(TranscodeContext* _pT)
 
     av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
 
-    ret = receive_frame(_pT->m_pDecodeCtx, &nStreamIndex);
+    ret = internal_receive_frame(_pT->m_pDecodeCtx, &nStreamIndex);
 
     AVCodecContext* pEncoder= _pT->m_pEncodeCtx->m_pArrCodecCtx[nStreamIndex];
     AVCodecContext* pDecoder= _pT->m_pDecodeCtx->m_pArrCodecCtx[nStreamIndex];
@@ -354,3 +368,22 @@ int write_trailer(TranscodeContext* _pT)
     return av_write_trailer(_pT->m_pEncodeCtx->m_pFmtCtx);
 }
 
+void set_muxer_options(TranscodeContext* _pT, AVDictionary* _pOpts)
+{
+    _pT->m_pOpts->m_pMuxerOptions = _pOpts;
+}
+
+int add_muxer_option(TranscodeContext* _pT, const char* _pKey, const char* _pValue, int _nFlags)
+{
+    return av_dict_set(&_pT->m_pOpts->m_pMuxerOptions, _pKey, _pValue, _nFlags);
+}
+
+void set_video_encode_id(TranscodeContext* _pT, enum AVCodecID _nID)
+{
+    _pT->m_pOpts->m_nVideoCodecID = _nID;
+}
+
+void set_audio_encode_id(TranscodeContext* _pT, enum AVCodecID _nID)
+{
+    _pT->m_pOpts->m_nAudioCodecID = _nID;
+}
