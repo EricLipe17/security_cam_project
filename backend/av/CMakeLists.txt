@@ -17,12 +17,11 @@ pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
 )
 
 set(HEADERS include/AV.h
-        include/AVIO.h
         include/AVUtil.h
         include/Transcode.h
         )
 
-set(SRC src/AVIO.c
+set(SRC
         src/Transcode.c
         )
 
