@@ -9,11 +9,11 @@ typedef struct StreamParams {
     char* m_pFQN;
 } StreamParams;
 
-typedef struct EncodeOptions {
-    AVDictionary* m_pMuxerOptions;
+typedef struct EncoderOpts {
+    AVDictionary* m_pOpts;
     enum AVCodecID m_nVideoCodecID;
     enum AVCodecID m_nAudioCodecID;
-} EncodeOptions;
+} EncoderOpts;
 
 typedef struct StreamContext {
     StreamParams* m_pParams;
@@ -27,7 +27,7 @@ typedef struct TranscodeContext
 {
     StreamContext* m_pDecodeCtx;
     StreamContext* m_pEncodeCtx;
-    EncodeOptions* m_pOpts;
+    EncoderOpts* m_pOpts;
 } TranscodeContext;
 
 TranscodeContext* alloc_transcoder();

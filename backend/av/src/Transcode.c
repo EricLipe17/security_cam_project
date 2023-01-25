@@ -9,12 +9,45 @@ StreamContext* internal_alloc_stream_context()
     return pS;
 }
 
-EncodeOptions* internal_alloc_encode_options()
+void internal_free_stream_context(StreamContext** _ppS)
 {
-    EncodeOptions* pOpts = malloc(sizeof(EncodeOptions));
-    pOpts->m_pMuxerOptions = NULL;
+    // Free CodecContexts
+    for (int i = 0; i < (*_ppS)->m_pFmtCtx->nb_streams; ++i) {
+        avcodec_free_context(&(*_ppS)->m_pArrCodecCtx[i]);
+        (*_ppS)->m_pArrCodecCtx[i] = NULL;
+    }
+    av_free((*_ppS)->m_pArrCodecCtx);
+    (*_ppS)->m_pArrCodecCtx = NULL;
+
+    // Free input resources
+    avformat_free_context((*_ppS)->m_pFmtCtx);
+    (*_ppS)->m_pFmtCtx = NULL;
+
+    av_frame_free(&(*_ppS)->m_pFrame);
+    (*_ppS)->m_pFrame = NULL;
+
+    av_packet_free(&(*_ppS)->m_pPkt);
+    (*_ppS)->m_pPkt = NULL;
+
+    // Free stream contexts
+    free(*_ppS);
+    *_ppS = NULL;
+}
+
+EncoderOpts* internal_alloc_muxer_opts()
+{
+    EncoderOpts* pOpts = malloc(sizeof(EncoderOpts));
+    pOpts->m_pOpts = NULL;
     pOpts->m_nVideoCodecID = AV_CODEC_ID_H264;
     pOpts->m_nAudioCodecID = AV_CODEC_ID_AAC;
+}
+
+void internal_free_muxer_opts(EncoderOpts** _ppOpts)
+{
+    av_dict_free(&(*_ppOpts)->m_pOpts);
+    (*_ppOpts)->m_pOpts = NULL;
+    free(*_ppOpts);
+    *_ppOpts = NULL;
 }
 
 TranscodeContext* alloc_transcoder()
@@ -22,61 +55,25 @@ TranscodeContext* alloc_transcoder()
     TranscodeContext* pT = malloc(sizeof(TranscodeContext));
     pT->m_pDecodeCtx = internal_alloc_stream_context();
     pT->m_pEncodeCtx = internal_alloc_stream_context();
-    pT->m_pOpts = internal_alloc_encode_options();
+    pT->m_pOpts = internal_alloc_muxer_opts();
     return pT;
 }
 
 void free_transcoder(TranscodeContext* _pT)
 {
-    // Free CodecContexts for all
-    for (int i = 0; i < _pT->m_pDecodeCtx->m_pFmtCtx->nb_streams; ++i) {
-        avcodec_free_context(&_pT->m_pDecodeCtx->m_pArrCodecCtx[i]);
-        avcodec_free_context(&_pT->m_pEncodeCtx->m_pArrCodecCtx[i]);
-        _pT->m_pDecodeCtx->m_pArrCodecCtx[i] = NULL;
-        _pT->m_pEncodeCtx->m_pArrCodecCtx[i] = NULL;
-    }
-    av_free(_pT->m_pDecodeCtx->m_pArrCodecCtx);
-    _pT->m_pDecodeCtx->m_pArrCodecCtx = NULL;
-    av_free(_pT->m_pEncodeCtx->m_pArrCodecCtx);
-    _pT->m_pEncodeCtx->m_pArrCodecCtx = NULL;
-
-    // Free input resources
-    avformat_free_context(_pT->m_pDecodeCtx->m_pFmtCtx);
-    _pT->m_pDecodeCtx->m_pFmtCtx = NULL;
-
-    av_frame_free(&_pT->m_pDecodeCtx->m_pFrame);
-    _pT->m_pDecodeCtx->m_pFrame = NULL;
-
-    av_packet_free(&_pT->m_pDecodeCtx->m_pPkt);
-    _pT->m_pDecodeCtx->m_pPkt = NULL;
-
-    // Free output resources
-    avformat_free_context(_pT->m_pEncodeCtx->m_pFmtCtx);
-    _pT->m_pEncodeCtx->m_pFmtCtx = NULL;
-
-    av_frame_free(&_pT->m_pEncodeCtx->m_pFrame);
-    _pT->m_pEncodeCtx->m_pFrame = NULL;
-
-    av_packet_free(&_pT->m_pEncodeCtx->m_pPkt);
-    _pT->m_pEncodeCtx->m_pPkt = NULL;
-
     // Free stream contexts
-    free(_pT->m_pDecodeCtx);
-    _pT->m_pDecodeCtx = NULL;
-    free(_pT->m_pEncodeCtx);
-    _pT->m_pEncodeCtx = NULL;
+    internal_free_stream_context(&_pT->m_pEncodeCtx);
+    internal_free_stream_context(&_pT->m_pDecodeCtx);
 
     // Free muxer opts
-    av_dict_free(&_pT->m_pOpts->m_pMuxerOptions);
-    _pT->m_pOpts->m_pMuxerOptions = NULL;
-    free(_pT->m_pOpts);
+    internal_free_muxer_opts(&_pT->m_pOpts);
 
     // Free transcoder instance
     free(_pT);
     _pT = NULL;
 }
 
-int open_input(StreamContext* _pInStreamCtx)
+int internal_open_input(StreamContext* _pInStreamCtx)
 {
     int ret;
     unsigned int i;
@@ -137,7 +134,7 @@ int open_input(StreamContext* _pInStreamCtx)
     return 0;
 }
 
-int open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx)
+int internal_open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx, EncoderOpts* _pOpts)
 {
     AVStream *out_stream;
     AVStream *in_stream;
@@ -169,7 +166,9 @@ int open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx)
         if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO
             || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* in this example, we choose transcoding to same codec */
-            encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            enum AVCodecID codecID = dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ?
+                    _pOpts->m_nVideoCodecID :_pOpts->m_nAudioCodecID;
+            encoder = avcodec_find_encoder(codecID);
             if (!encoder) {
                 av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
                 return AVERROR_INVALIDDATA;
@@ -208,7 +207,7 @@ int open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx)
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
             /* Third parameter can be used to pass settings to encoder */
-            ret = avcodec_open2(enc_ctx, encoder, NULL);
+            ret = avcodec_open2(enc_ctx, encoder, &_pOpts->m_pOpts);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", i);
                 return ret;
@@ -260,8 +259,8 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     _pT->m_pDecodeCtx->m_pParams = _pIn;
     _pT->m_pEncodeCtx->m_pParams = _pOut;
 
-    open_input(_pT->m_pDecodeCtx);
-    open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx);
+    internal_open_input(_pT->m_pDecodeCtx);
+    internal_open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx);
 }
 
 int internal_receive_frame(StreamContext* _pS, int* _nStreamIndex_)
@@ -370,12 +369,12 @@ int write_trailer(TranscodeContext* _pT)
 
 void set_muxer_options(TranscodeContext* _pT, AVDictionary* _pOpts)
 {
-    _pT->m_pOpts->m_pMuxerOptions = _pOpts;
+    _pT->m_pOpts->m_pOpts = _pOpts;
 }
 
 int add_muxer_option(TranscodeContext* _pT, const char* _pKey, const char* _pValue, int _nFlags)
 {
-    return av_dict_set(&_pT->m_pOpts->m_pMuxerOptions, _pKey, _pValue, _nFlags);
+    return av_dict_set(&_pT->m_pOpts->m_pOpts, _pKey, _pValue, _nFlags);
 }
 
 void set_video_encode_id(TranscodeContext* _pT, enum AVCodecID _nID)
