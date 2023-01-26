@@ -34,15 +34,17 @@ void internal_free_stream_context(StreamContext** _ppS)
     *_ppS = NULL;
 }
 
-EncoderOpts* internal_alloc_muxer_opts()
+CodecOpts* internal_alloc_muxer_opts()
 {
-    EncoderOpts* pOpts = malloc(sizeof(EncoderOpts));
+    CodecOpts* pOpts = malloc(sizeof(CodecOpts));
     pOpts->m_pOpts = NULL;
     pOpts->m_nVideoCodecID = AV_CODEC_ID_H264;
     pOpts->m_nAudioCodecID = AV_CODEC_ID_AAC;
+    pOpts->m_nFlags = 0;
+    pOpts->m_nFlags2 = 0;
 }
 
-void internal_free_muxer_opts(EncoderOpts** _ppOpts)
+void internal_free_muxer_opts(CodecOpts** _ppOpts)
 {
     av_dict_free(&(*_ppOpts)->m_pOpts);
     (*_ppOpts)->m_pOpts = NULL;
@@ -134,7 +136,7 @@ int internal_open_input(StreamContext* _pInStreamCtx)
     return 0;
 }
 
-int internal_open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx, EncoderOpts* _pOpts)
+int internal_open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStreamCtx, CodecOpts* _pOpts)
 {
     AVStream *out_stream;
     AVStream *in_stream;
@@ -206,6 +208,10 @@ int internal_open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStrea
             if (_pOutStreamCtx->m_pFmtCtx->oformat->flags & AVFMT_GLOBALHEADER)
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
+            // Add user specified flags
+            enc_ctx->flags |= _pOpts->m_nFlags;
+            enc_ctx->flags2 |= _pOpts->m_nFlags2;
+
             /* Third parameter can be used to pass settings to encoder */
             ret = avcodec_open2(enc_ctx, encoder, &_pOpts->m_pOpts);
             if (ret < 0) {
@@ -260,7 +266,7 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     _pT->m_pEncodeCtx->m_pParams = _pOut;
 
     internal_open_input(_pT->m_pDecodeCtx);
-    internal_open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx);
+    internal_open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx, _pT->m_pOpts);
 }
 
 int internal_receive_frame(StreamContext* _pS, int* _nStreamIndex_)
@@ -367,12 +373,12 @@ int write_trailer(TranscodeContext* _pT)
     return av_write_trailer(_pT->m_pEncodeCtx->m_pFmtCtx);
 }
 
-void set_muxer_options(TranscodeContext* _pT, AVDictionary* _pOpts)
+void set_encode_options(TranscodeContext* _pT, AVDictionary* _pOpts)
 {
     _pT->m_pOpts->m_pOpts = _pOpts;
 }
 
-int add_muxer_option(TranscodeContext* _pT, const char* _pKey, const char* _pValue, int _nFlags)
+int add_encode_option(TranscodeContext* _pT, const char* _pKey, const char* _pValue, int _nFlags)
 {
     return av_dict_set(&_pT->m_pOpts->m_pOpts, _pKey, _pValue, _nFlags);
 }
@@ -385,4 +391,16 @@ void set_video_encode_id(TranscodeContext* _pT, enum AVCodecID _nID)
 void set_audio_encode_id(TranscodeContext* _pT, enum AVCodecID _nID)
 {
     _pT->m_pOpts->m_nAudioCodecID = _nID;
+}
+
+void set_encode_flags(TranscodeContext* _pT, int _nFlags, int _nFlags2)
+{
+    _pT->m_pOpts->m_nFlags = _nFlags;
+    _pT->m_pOpts->m_nFlags2 = _nFlags2;
+}
+
+void add_encode_flag(TranscodeContext* _pT, int _nFlag, int _nFlag2)
+{
+    _pT->m_pOpts->m_nFlags |= _nFlag;
+    _pT->m_pOpts->m_nFlags2 |= _nFlag2;
 }

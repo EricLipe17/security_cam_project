@@ -21,13 +21,23 @@ int fill_stream_info2(AVStream *avs, AVCodec **avc, AVCodecContext **avcc) {
 
 int main(int argc, char *argv[])
 {
-    TranscodeContext* pTranscoder = alloc_transcoder();
     StreamParams inParams;
     StreamParams outParams;
     inParams.m_pFQN = "xmas.mp4";
-    outParams.m_pFQN = "xmas_t.mp4";
+    outParams.m_pFQN = "xmas_t.m3u8";
+    AVDictionary* pEncoderOpts = NULL;
+    int nFlags = AV_CODEC_FLAG_CLOSED_GOP;
+    int nFlags2 = 0;
+    av_dict_set_int(&pEncoderOpts, "g", 30, 0);
+    av_dict_set_int(&pEncoderOpts, "hls_time", 10, 0);
 
+    TranscodeContext* pTranscoder = alloc_transcoder();
+    set_encode_options(pTranscoder, pEncoderOpts);
+    set_encode_flags(pTranscoder, nFlags, nFlags2);
+    set_video_encode_id(pTranscoder, AV_CODEC_ID_H264);
+    set_audio_encode_id(pTranscoder, AV_CODEC_ID_AAC);
     init_transcoder(pTranscoder, &inParams, &outParams);
+
     int ret;
     do {
         ret = write_frame(pTranscoder);
