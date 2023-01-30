@@ -28,8 +28,6 @@ int main(int argc, char *argv[])
     AVDictionary* pEncoderOpts = NULL;
     int nFlags = AV_CODEC_FLAG_CLOSED_GOP;
     int nFlags2 = 0;
-    av_dict_set_int(&pEncoderOpts, "g", 30, 0);
-    av_dict_set_int(&pEncoderOpts, "hls_time", 10, 0);
 
     TranscodeContext* pTranscoder = alloc_transcoder();
     set_encode_options(pTranscoder, pEncoderOpts);

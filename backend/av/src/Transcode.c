@@ -1,5 +1,9 @@
 #include "Transcode.h"
 
+#include "libavutil/opt.h"
+
+#include "math.h"
+
 StreamContext* internal_alloc_stream_context()
 {
     StreamContext* pS = malloc(sizeof(StreamContext));
@@ -209,11 +213,30 @@ int internal_open_output(StreamContext* _pOutStreamCtx, StreamContext* _pInStrea
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
             // Add user specified flags
-            enc_ctx->flags |= _pOpts->m_nFlags;
-            enc_ctx->flags2 |= _pOpts->m_nFlags2;
+            if (_pOpts->m_nFlags != 0)
+                enc_ctx->flags |= _pOpts->m_nFlags;
+            if (_pOpts->m_nFlags2 != 0)
+                enc_ctx->flags2 |= _pOpts->m_nFlags2;
 
             /* Third parameter can be used to pass settings to encoder */
+            av_dict_set_int(&_pOpts->m_pOpts, "ticks_per_frame", dec_ctx->ticks_per_frame, AV_DICT_DONT_OVERWRITE);
+            av_dict_set_int(&_pOpts->m_pOpts, "b", dec_ctx->bit_rate, AV_DICT_DONT_OVERWRITE);
+            av_dict_set_int(&_pOpts->m_pOpts, "g", 2 * (int)ceilf((float)dec_ctx->framerate.num / (float)dec_ctx->framerate.den), AV_DICT_DONT_OVERWRITE);
+
             ret = avcodec_open2(enc_ctx, encoder, &_pOpts->m_pOpts);
+            AVDictionaryEntry *t = NULL;
+            t = av_dict_get(_pOpts->m_pOpts, "", t, AV_DICT_IGNORE_SUFFIX);
+            while (t) {
+                printf("%s", t->key);
+                printf(" ");
+                printf("%s", t->value);
+                printf("\n");
+                t = av_dict_get(_pOpts->m_pOpts, "", t, AV_DICT_IGNORE_SUFFIX);
+            }
+            av_opt_set_int(enc_ctx->priv_data, "hls_time", 5, AV_OPT_SEARCH_CHILDREN);
+            av_opt_set_int(enc_ctx->priv_data, "framerate", dec_ctx->framerate.num / dec_ctx->framerate.den, AV_OPT_SEARCH_CHILDREN);
+            av_opt_set_int(enc_ctx->priv_data, "hls_init_time", 5, AV_OPT_SEARCH_CHILDREN);
+            av_opt_set_int(enc_ctx->priv_data, "hls_list_size", 0, AV_OPT_SEARCH_CHILDREN);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", i);
                 return ret;
@@ -269,19 +292,19 @@ void init_transcoder(TranscodeContext* _pT, StreamParams* _pIn, StreamParams* _p
     internal_open_output(_pT->m_pEncodeCtx, _pT->m_pDecodeCtx, _pT->m_pOpts);
 }
 
-int internal_receive_frame(StreamContext* _pS, int* _nStreamIndex_)
+int internal_receive_frame(StreamContext* _pDecodeStreamCtx, int* _nStreamIndex_)
 {
     int ret;
 
     // Receive frame from decoder
-    av_packet_unref(_pS->m_pPkt);
-    av_read_frame(_pS->m_pFmtCtx, _pS->m_pPkt);
-    *_nStreamIndex_ = _pS->m_pPkt->stream_index;
+    av_packet_unref(_pDecodeStreamCtx->m_pPkt);
+    av_read_frame(_pDecodeStreamCtx->m_pFmtCtx, _pDecodeStreamCtx->m_pPkt);
+    *_nStreamIndex_ = _pDecodeStreamCtx->m_pPkt->stream_index;
     av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", *_nStreamIndex_);
-    av_packet_rescale_ts(_pS->m_pPkt,
-                         _pS->m_pFmtCtx->streams[*_nStreamIndex_]->time_base,
-                         _pS->m_pArrCodecCtx[*_nStreamIndex_]->time_base);
-    ret = avcodec_send_packet(_pS->m_pArrCodecCtx[*_nStreamIndex_], _pS->m_pPkt);
+    av_packet_rescale_ts(_pDecodeStreamCtx->m_pPkt,
+                         _pDecodeStreamCtx->m_pFmtCtx->streams[*_nStreamIndex_]->time_base,
+                         _pDecodeStreamCtx->m_pArrCodecCtx[*_nStreamIndex_]->time_base);
+    ret = avcodec_send_packet(_pDecodeStreamCtx->m_pArrCodecCtx[*_nStreamIndex_], _pDecodeStreamCtx->m_pPkt);
 
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
@@ -291,30 +314,32 @@ int internal_receive_frame(StreamContext* _pS, int* _nStreamIndex_)
     return ret;
 }
 
-int internal_write_frame(StreamContext* pStreamCtx, AVCodecContext* _pEncoder,
-                         AVFrame* _pDecodedFrame, int _nStreamIndex)
+int internal_write_frame(StreamContext* _pEncodeStreamCtx, AVCodecContext* _pEncoder,
+                         AVFrame* _pDecodedFrame, long _nDuration, int _nStreamIndex)
 {
     int ret;
 
-    av_packet_unref(pStreamCtx->m_pPkt);
+    av_packet_unref(_pEncodeStreamCtx->m_pPkt);
 
     ret = avcodec_send_frame(_pEncoder, _pDecodedFrame);
 
     while (ret >= 0) {
-        ret = avcodec_receive_packet(_pEncoder, pStreamCtx->m_pPkt);
+        ret = avcodec_receive_packet(_pEncoder, _pEncodeStreamCtx->m_pPkt);
 
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             return 0;
 
         /* prepare packet for muxing */
-        pStreamCtx->m_pPkt->stream_index = _nStreamIndex;
-        av_packet_rescale_ts(pStreamCtx->m_pPkt,
+        _pEncodeStreamCtx->m_pPkt->stream_index = _nStreamIndex;
+        av_packet_rescale_ts(_pEncodeStreamCtx->m_pPkt,
                              _pEncoder->time_base,
-                             pStreamCtx->m_pFmtCtx->streams[_nStreamIndex]->time_base);
+                             _pEncodeStreamCtx->m_pFmtCtx->streams[_nStreamIndex]->time_base);
+
+        _pEncodeStreamCtx->m_pPkt->duration = _nDuration;
 
         av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
         /* mux encoded frame */
-        ret = av_interleaved_write_frame(pStreamCtx->m_pFmtCtx, pStreamCtx->m_pPkt);
+        ret = av_interleaved_write_frame(_pEncodeStreamCtx->m_pFmtCtx, _pEncodeStreamCtx->m_pPkt);
     }
 
     return ret;
@@ -331,7 +356,7 @@ int flush_encoder(TranscodeContext* _pT, int _nSteamIndex)
     AVCodecContext* pEncoder= _pT->m_pEncodeCtx->m_pArrCodecCtx[_nSteamIndex];
     StreamContext* pEncodeStream = _pT->m_pEncodeCtx;
     return internal_write_frame(pEncodeStream, pEncoder,
-                         NULL, _nSteamIndex);
+                         NULL, 0, _nSteamIndex);
 }
 
 int write_frame(TranscodeContext* _pT)
@@ -362,7 +387,7 @@ int write_frame(TranscodeContext* _pT)
 
         pDecodeStream->m_pFrame->pts = pDecodeStream->m_pFrame->best_effort_timestamp;
         internal_write_frame(pEncodeStream, pEncoder,
-                             pDecodeStream->m_pFrame, nStreamIndex);
+                             pDecodeStream->m_pFrame, pDecodeStream->m_pPkt->duration, nStreamIndex);
     }
 
     return ret;
