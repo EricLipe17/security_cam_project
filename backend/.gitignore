@@ -1,0 +1,12 @@
+av/third-party/ffmpeg/build
+av/third-party/ffmpeg/aom
+av/third-party/ffmpeg/aom_build
+av/third-party/ffmpeg/dav1d
+av/third-party/ffmpeg/fdk-aac
+av/third-party/ffmpeg/libvpx
+av/third-party/ffmpeg/nasm-2.15.05
+av/third-party/ffmpeg/opus
+av/third-party/ffmpeg/SVT-AV1
+av/third-party/ffmpeg/vmaf-2.1.1
+av/third-party/ffmpeg/x264
+av/third-party/ffmpeg/x265
