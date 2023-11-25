@@ -11,3 +11,4 @@ av/third-party/ffmpeg/vmaf-2.1.1
 av/third-party/ffmpeg/x264
 av/third-party/ffmpeg/x265
 build
+__pycache__
