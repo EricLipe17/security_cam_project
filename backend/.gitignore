@@ -12,3 +12,8 @@ av/third-party/ffmpeg/x264
 av/third-party/ffmpeg/x265
 build
 __pycache__
+*.o
+*.a
+.deps/
+bin/
+lib/
