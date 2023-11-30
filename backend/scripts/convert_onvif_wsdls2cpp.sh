@@ -10,8 +10,8 @@ while read line; do
   WSDLS="$WSDLS $line"
 done < ONVIF_wsdls.txt
 
-./bin/wsdl2h -O4 -P -x -o onvif.h "$WSDLS"
+sudo $GSOAP_HOME/bin/wsdl2h -O4 -P -x -o onvif.h $WSDLS
 
-./bin/soapcpp2 -2 -I ./gsoap/import onvif.h
+sudo $GSOAP_HOME/bin/soapcpp2 -2 -I $GSOAP_HOME/gsoap/import onvif.h
 
 popd
