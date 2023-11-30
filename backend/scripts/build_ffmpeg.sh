@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Install dependencies if they arent already
 sudo apt-get update -qq && sudo apt-get upgrade && sudo apt-get -y install \
   autoconf \
