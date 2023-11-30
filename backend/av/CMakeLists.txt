@@ -4,7 +4,7 @@ project(av VERSION 0.0.1 LANGUAGES C)
 set(CMAKE_C_STANDARD 17)
 # TODO: Figure out why Clion is not passing in the appropriate environment variable for cmake to use
 #set(ENV{PKG_CONFIG_PATH} $ENV{FFMPEG_HOME}/build/lib/pkgconfig)
-set(ENV{PKG_CONFIG_PATH} /home/eric/projects/security_cam_project/backend/av/third-party/ffmpeg/build/lib/pkgconfig)
+set(ENV{PKG_CONFIG_PATH} /home/eric/projects/security_cam_project/backend/third-party/ffmpeg/build/lib/pkgconfig)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
         libavdevice
