@@ -560,22 +560,22 @@ vprop   = "http://docs.oasis-open.org/wsbpel/2.0/varprop"
 #       http://www.onvif.org/onvif/ver10/analyticsdevice.wsdl   
 #       http://www.onvif.org/onvif/ver10/schema/onvif.xsd
 
-tds     = "http://www.onvif.org/ver10/device/wsdl"
-tev     = "http://www.onvif.org/ver10/events/wsdl"
-tls     = "http://www.onvif.org/ver10/display/wsdl"
-tmd     = "http://www.onvif.org/ver10/deviceIO/wsdl"
-timg    = "http://www.onvif.org/ver20/imaging/wsdl"
-trt     = "http://www.onvif.org/ver10/media/wsdl"
-tptz    = "http://www.onvif.org/ver20/ptz/wsdl"
-trv     = "http://www.onvif.org/ver10/receiver/wsdl"
-trc     = "http://www.onvif.org/ver10/recording/wsdl"
-tse     = "http://www.onvif.org/ver10/search/wsdl"
-trp     = "http://www.onvif.org/ver10/replay/wsdl"
-tan     = "http://www.onvif.org/ver20/analytics/wsdl"
-tad     = "http://www.onvif.org/ver10/analyticsdevice/wsdl"
-tas     = "http://www.onvif.org/ver10/advancedsecurity/wsdl"
-tdn     = "http://www.onvif.org/ver10/network/wsdl"
-tt      = "http://www.onvif.org/ver10/schema"
+tds     = https://www.onvif.org/ver10/device/wsdl
+tev     = https://www.onvif.org/ver10/events/wsdl
+tls     = https://www.onvif.org/ver10/display/wsdl
+tmd     = https://www.onvif.org/ver10/deviceio/wsdl
+timg    = https://www.onvif.org/ver20/imaging/wsdl
+trt     = https://www.onvif.org/ver10/media/wsdl
+tptz    = https://www.onvif.org/ver20/ptz/wsdl
+trv     = https://www.onvif.org/ver10/receiver/wsdl
+trc     = https://www.onvif.org/ver10/recording/wsdl
+tse     = https://www.onvif.org/ver10/search/wsdl
+trp     = https://www.onvif.org/ver10/replay/wsdl
+tan     = https://www.onvif.org/ver20/analytics/wsdl
+tad     = https://www.onvif.org/onvif/ver10/analyticsdevice/wsdl
+tas     = https://www.onvif.org/ver10/advancedsecurity/wsdl
+tdn     = https://www.onvif.org/onvif/ver10/network/wsdl
+tt      = https://www.onvif.org/onvif/ver10/schema
 
 #       to extend tt__EventFilter with TopicExpression element (for C):
 # tt__EventFilter = $ struct wsnt__TopicExpressionType *wsnt__TopicExpression;
