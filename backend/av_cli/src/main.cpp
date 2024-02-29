@@ -328,8 +328,8 @@ int main(int argc, char *argv[])
 //    if (sp.m_pOutExt)
 //        strcat(encoder->filename, sp.m_pOutExt);
 //
-    if (open_media2(pFN, &decoder->m_pFormatCtx)) return -1;
-    if (prepare_decoder2(decoder)) return -1;
+    // if (open_media2(pFN, &decoder->m_pFormatCtx)) return -1;
+    // if (prepare_decoder2(decoder)) return -1;
 //
 //    avformat_alloc_output_context2(&encoder->m_pFormatCtx, NULL, NULL, encoder->filename);
 //    if (!encoder->m_pFormatCtx) {av_log(NULL, AV_LOG_ERROR, "could not allocate memory for output format");return -1;}
@@ -365,42 +365,42 @@ int main(int argc, char *argv[])
 //
 //    if (avformat_write_header(encoder->m_pFormatCtx, &muxer_opts) < 0) {av_log(NULL, AV_LOG_ERROR, "an error occurred when opening output file"); return -1;}
 
-    TranscodeContext* pTranscoder = alloc_transcoder();
-    init_transcoder(pTranscoder, &sp, decoder->m_pFormatCtx, "output");
+    // TranscodeContext* pTranscoder = alloc_transcoder();
+    // init_transcoder(pTranscoder, &sp, decoder->m_pFormatCtx, "output");
 
-    StreamWriter* pSW = alloc_writer();
-    init_writer(pSW, pTranscoder, 10000);
-    write_header(pSW);
+    // StreamWriter* pSW = alloc_writer();
+    // init_writer(pSW, pTranscoder, 10000);
+    // write_header(pSW);
 
-    AVFrame *input_frame = av_frame_alloc();
-    if (!input_frame) {av_log(NULL, AV_LOG_ERROR, "failed to allocated memory for AVFrame"); return -1;}
+    // AVFrame *input_frame = av_frame_alloc();
+    // if (!input_frame) {av_log(NULL, AV_LOG_ERROR, "failed to allocated memory for AVFrame"); return -1;}
 
-    AVPacket *input_packet = av_packet_alloc();
-    if (!input_packet) {av_log(NULL, AV_LOG_ERROR, "failed to allocated memory for AVPacket"); return -1;}
-    AVPacket *output_packet = av_packet_alloc();
+    // AVPacket *input_packet = av_packet_alloc();
+    // if (!input_packet) {av_log(NULL, AV_LOG_ERROR, "failed to allocated memory for AVPacket"); return -1;}
+    // AVPacket *output_packet = av_packet_alloc();
 
-    while (av_read_frame(decoder->m_pFormatCtx, input_packet) >= 0)
-    {
-        if (decoder->m_pFormatCtx->streams[input_packet->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-        {
-            transcode_video(pTranscoder, input_packet, input_frame, &output_packet);
-            write_packet(pSW, &output_packet);
-        }
-        else if (decoder->m_pFormatCtx->streams[input_packet->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            transcode_audio(pTranscoder, input_packet, input_frame, &output_packet);
-            write_packet(pSW, &output_packet);
-        }
-        else
-        {
-            av_log(NULL, AV_LOG_ERROR, "ignoring all non video or audio packets");
-        }
-    }
+    // while (av_read_frame(decoder->m_pFormatCtx, input_packet) >= 0)
+    // {
+    //     if (decoder->m_pFormatCtx->streams[input_packet->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+    //     {
+    //         transcode_video(pTranscoder, input_packet, input_frame, &output_packet);
+    //         write_packet(pSW, &output_packet);
+    //     }
+    //     else if (decoder->m_pFormatCtx->streams[input_packet->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+    //     {
+    //         transcode_audio(pTranscoder, input_packet, input_frame, &output_packet);
+    //         write_packet(pSW, &output_packet);
+    //     }
+    //     else
+    //     {
+    //         av_log(NULL, AV_LOG_ERROR, "ignoring all non video or audio packets");
+    //     }
+    // }
 
-    write_trailer(pSW);
-    free_writer(pSW);
+    // write_trailer(pSW);
+    // free_writer(pSW);
 
-    free_transcoder(pTranscoder);
+    // free_transcoder(pTranscoder);
 
 //    // TODO: should I also flush the audio encoder?
 //    if (encode_video(decoder, encoder, NULL)) return -1;
