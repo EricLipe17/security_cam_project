@@ -1,6 +1,8 @@
 #pragma once
 
-#include <libavcodec/avcodec.h>
+extern "C" {
+    #include <libavcodec/avcodec.h>
+}
 
 static void set_error_msg(char* _pErrMsg, const int _nResponse)
 {
@@ -32,7 +34,7 @@ static void get_next_filename(const char* _pFN, const char* _pExt, char** _pDst)
     const unsigned char nMaxSize = strlen(_pFN) + strlen(_pExt) + 18;
     if (!(*_pDst) || strlen((*_pDst)) < nMaxSize)
     {
-        (*_pDst) = malloc(sizeof(char) * nMaxSize);
+        (*_pDst) = new char[nMaxSize]();
     }
     snprintf(*_pDst, nMaxSize, "%s-%d-%02d-%02d_%02d:%02d:%02d.%s\n",
              _pFN, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, _pExt);

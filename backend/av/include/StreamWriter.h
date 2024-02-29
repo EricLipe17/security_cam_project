@@ -2,7 +2,9 @@
 
 #include "Transcode.h"
 
-#include <libavformat/avformat.h>
+extern "C" {
+    #include <libavformat/avformat.h>
+}
 
 typedef struct StreamWriter
 {

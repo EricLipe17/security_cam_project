@@ -1,8 +1,11 @@
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/timestamp.h>
+extern "C" {
+    #include <libavcodec/avcodec.h>
+    #include <libavformat/avformat.h>
+    #include <libavutil/timestamp.h>
+    #include <libavutil/opt.h>
+}
+
 #include <stdlib.h>
-#include <libavutil/opt.h>
 #include <string.h>
 
 #include "Transcode.h"
@@ -33,7 +36,7 @@
 //    char *filename;
 //} TranscodeContext;
 //
-int fill_stream_info2(AVStream *avs, AVCodec **avc, AVCodecContext **avcc) {
+int fill_stream_info2(AVStream *avs, const AVCodec **avc, AVCodecContext **avcc) {
     *avc = avcodec_find_decoder(avs->codecpar->codec_id);
     if (!*avc) {av_log(NULL, AV_LOG_ERROR, "failed to find the codec"); return -1;}
 

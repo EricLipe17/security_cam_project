@@ -2,8 +2,10 @@
 
 #include "RtspStream.h"
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
+extern "C" {
+    #include <libavcodec/avcodec.h>
+    #include <libavformat/avformat.h>
+}
 
 typedef struct StreamingParams
 {
@@ -24,8 +26,8 @@ typedef struct StreamingParams
 typedef struct StreamContext
 {
     AVFormatContext* m_pFormatCtx;
-    AVCodec* m_pVideoCodec;
-    AVCodec* m_pAudioCodec;
+    const AVCodec* m_pVideoCodec;
+    const AVCodec* m_pAudioCodec;
     AVStream* m_pVideoStream;
     AVStream* m_pAudioStream;
     AVCodecContext* m_pVideoCodecCtx;

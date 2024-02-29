@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
-project(av_cli VERSION 0.0.1 LANGUAGES C)
+project(av_cli VERSION 0.0.1 LANGUAGES CXX)
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 set(HEADERS)
 
-set(SRC src/main.c)
+set(SRC src/main.cpp)
 
 add_executable(${PROJECT_NAME}
         ${SRC}

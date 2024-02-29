@@ -19,7 +19,7 @@ int init_output_filename(TranscodeContext** _pT)
     const size_t nSizeDir = strlen(STORAGE_DIR);
     const size_t nSizeFQP = strlen((*_pT)->m_pOutParams->m_pFQN);
 
-    (*_pT)->m_pOutParams->m_pFQP = malloc(sizeof(char) * (nSizeDir + nSizeFQP));
+    (*_pT)->m_pOutParams->m_pFQP = new char(sizeof(char) * (nSizeDir + nSizeFQP));
     stpncpy((*_pT)->m_pOutParams->m_pFQP, STORAGE_DIR, nSizeDir);
     stpncpy((*_pT)->m_pOutParams->m_pFQP + nSizeDir, (*_pT)->m_pOutParams->m_pFQN, nSizeFQP);
 }
@@ -247,10 +247,10 @@ int remux(TranscodeContext* _pT, AVPacket** _ppInputPkt, const char _nVideo, AVP
 
 TranscodeContext* alloc_transcoder()
 {
-    TranscodeContext* pT = malloc(sizeof(TranscodeContext));
-    pT->m_pEncoderCtx = malloc(sizeof(StreamContext));
-    pT->m_pDecoderCtx = malloc(sizeof(StreamContext));
-    pT->m_pOutParams = malloc(sizeof(StreamingParams));
+    TranscodeContext* pT = new TranscodeContext();
+    pT->m_pEncoderCtx = new StreamContext();
+    pT->m_pDecoderCtx = new StreamContext();
+    pT->m_pOutParams = new StreamingParams();
     return pT;
 }
 
@@ -280,7 +280,7 @@ void free_transcoder(TranscodeContext* _pT)
     _pT = NULL;
 }
 
-int init_transcoder(TranscodeContext* _pT, StreamingParams* _pParams, AVFormatContext* _pDecodeCtx, const char* _pFN)
+int init_transcoder(TranscodeContext* _pT, StreamingParams* _pParams, AVFormatContext* _pDecodeCtx, char* _pFN)
 {
     if (_pParams)
         _pT->m_pOutParams = _pParams;
