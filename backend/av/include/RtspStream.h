@@ -42,5 +42,6 @@ class RtspStream {
         int format_frame();
         int init_formatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter, 
                            SwsFilter *_pDstFilter, const double *_pParam);
+        int decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt);
 
 };
