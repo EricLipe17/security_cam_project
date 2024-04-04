@@ -4,16 +4,16 @@
 
 int RtspStream::decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt)
 {
-    int nResponse = avcodec_send_packet(m_pCodecContexts[_nCtxIndex], *_pPkt);
+    int nResponse = avcodec_send_packet(m_vCodecContexts[_nCtxIndex], *_pPkt);
     if (nResponse < 0)
     {
-        set_error_msg(m_pErrMsg, nResponse);
+        //set_error_msg(m_pErrMsg, nResponse);
         return PACKET_DECODE_FAILED;
     }
-    nResponse = avcodec_receive_frame(m_pCodecContexts[_nCtxIndex], *_pFrame);
+    nResponse = avcodec_receive_frame(m_vCodecContexts[_nCtxIndex], *_pFrame);
     if (nResponse < 0)
     {
-        set_error_msg(m_pErrMsg, nResponse);
+        //set_error_msg(m_pErrMsg, nResponse);
         return FRAME_DECODE_FAILED;
     }
 
@@ -29,17 +29,8 @@ RtspStream::RtspStream(const char* _pUrl)
 
     m_pURL = _pUrl;
 
-    // Allocate Codec containers
-    m_nNumCodecContainers = m_pFormatContext->nb_streams;
-    m_pCodecParams = new AVCodecParameters*[m_nNumCodecContainers];
-    m_pCodecs = new AVCodec*[m_nNumCodecContainers];
-    m_pCodecContexts = new AVCodecContext*[m_nNumCodecContainers];
-
     m_pFormatContext = NULL;
     m_pOpts = NULL;
-    m_pCodecParams = NULL;
-    m_pCodecs = NULL;
-    m_pCodecContexts = NULL;
     m_nNumCodecContainers = -1;
     m_pSwsScalerContext = NULL;
     m_pVideoFrame = NULL;
@@ -69,15 +60,11 @@ RtspStream::~RtspStream()
 
     for (int i = 0; i < m_nNumCodecContainers; ++i)
     {
-        avcodec_free_context(&m_pCodecContexts[i]);
-        m_pCodecContexts[i] = NULL;
-        avcodec_parameters_free(&m_pCodecParams[i]);
-        m_pCodecParams[i] = NULL;
+        avcodec_free_context(&m_vCodecContexts[i]);
+        m_vCodecContexts[i] = NULL;
+        avcodec_parameters_free(&m_vCodecParams[i]);
+        m_vCodecParams[i] = NULL;
     }
-    free(m_pCodecContexts);
-    m_pCodecContexts = NULL;
-    free(m_pCodecs);
-    m_pCodecs = NULL;
 
     if (m_pSwsScalerContext)
     {
@@ -114,37 +101,37 @@ int RtspStream::init_stream()
         if (m_nAudioStreamIndex == -1 && pTempCodec && pTempParams->codec_type == AVMEDIA_TYPE_AUDIO)
             m_nAudioStreamIndex = i;
 
-        m_pCodecs[i] = pTempCodec;
-        m_pCodecParams[i] = pTempParams;
+        m_vCodecs[i] = pTempCodec;
+        m_vCodecParams[i] = pTempParams;
     }
 
     if (m_nVideoStreamIndex == -1)
         return VIDEO_STREAM_NOT_FOUND;
 
     // Setup codec context for decoder
-    m_pCodecContexts[m_nVideoStreamIndex] = avcodec_alloc_context3(m_pCodecs[m_nVideoStreamIndex]);
-    if (avcodec_parameters_to_context(m_pCodecContexts[m_nVideoStreamIndex], m_pCodecParams[m_nVideoStreamIndex]))
+    m_vCodecContexts[m_nVideoStreamIndex] = avcodec_alloc_context3(m_vCodecs[m_nVideoStreamIndex]);
+    if (avcodec_parameters_to_context(m_vCodecContexts[m_nVideoStreamIndex], m_vCodecParams[m_nVideoStreamIndex]))
         return CODEC_INIT_FAILED;
 
     if (m_nAudioStreamIndex != -1)
     {
-        m_pCodecContexts[m_nAudioStreamIndex] = avcodec_alloc_context3(m_pCodecs[m_nAudioStreamIndex]);
-        if (avcodec_parameters_to_context(m_pCodecContexts[m_nAudioStreamIndex], m_pCodecParams[m_nAudioStreamIndex]))
+        m_vCodecContexts[m_nAudioStreamIndex] = avcodec_alloc_context3(m_vCodecs[m_nAudioStreamIndex]);
+        if (avcodec_parameters_to_context(m_vCodecContexts[m_nAudioStreamIndex], m_vCodecParams[m_nAudioStreamIndex]))
             return CODEC_INIT_FAILED;
     }
 
-    if (avcodec_open2(m_pCodecContexts[m_nVideoStreamIndex],
-                      m_pCodecs[m_nVideoStreamIndex], NULL) < 0)
+    if (avcodec_open2(m_vCodecContexts[m_nVideoStreamIndex],
+                      m_vCodecs[m_nVideoStreamIndex], NULL) < 0)
         return CODEC_OPEN_FAILED;
 
-    if (avcodec_open2(m_pCodecContexts[m_nAudioStreamIndex],
-                      m_pCodecs[m_nAudioStreamIndex], NULL) < 0)
+    if (avcodec_open2(m_vCodecContexts[m_nAudioStreamIndex],
+                      m_vCodecs[m_nAudioStreamIndex], NULL) < 0)
         return CODEC_OPEN_FAILED;
 
     return 0;
 }
 
-int init_buffers(RtspStream* _pS, int _nMaxTries)
+int RtspStream::init_buffers(int _nMaxTries)
 {
     AVFrame* pFrame = av_frame_alloc();
     AVPacket* pPkt = av_packet_alloc();
@@ -156,22 +143,22 @@ int init_buffers(RtspStream* _pS, int _nMaxTries)
         --_nMaxTries;
         if (nFrameBufferInitialized == 0 && pPkt->stream_index == m_nVideoStreamIndex)
         {
-            nRet = decompress_packet(&_pS, m_nVideoStreamIndex, &pFrame, &pPkt);
+            nRet = decompress_packet(m_nVideoStreamIndex, &pFrame, &pPkt);
             if (!nRet)
             {
                 m_nWidth = pFrame->width;
                 m_nHeight = pFrame->height;
                 m_nFrameBufferSize = m_nWidth * m_nHeight * 4;
-                m_pFrameBuffer  = malloc(sizeof(unsigned char) * m_nFrameBufferSize);
+                m_pFrameBuffer = new unsigned char[m_nFrameBufferSize];
                 ++nFrameBufferInitialized;
             }
         }
         if (nAudioBufferInitialized == 0 && pPkt->stream_index == m_nAudioStreamIndex)
         {
-            nRet = decompress_packet(&_pS, m_nAudioStreamIndex, &pFrame, &pPkt);
+            nRet = decompress_packet(m_nAudioStreamIndex, &pFrame, &pPkt);
             if (!nRet)
             {
-                m_pAudioBuffer = malloc(sizeof(unsigned char) * pFrame->linesize[0]);
+                m_pAudioBuffer = new unsigned char[pFrame->linesize[0]];
                 ++nAudioBufferInitialized;
             }
         }
@@ -185,8 +172,9 @@ int init_buffers(RtspStream* _pS, int _nMaxTries)
     return nRet;
 }
 
-int get_next_frame(RtspStream* _pS)
+int RtspStream::get_next_frame()
 {
+    // TODO: This has a memory leak wrt the packet and frame
     AVFrame* pFrame = av_frame_alloc();
     AVPacket* pPkt = av_packet_alloc();
     int nRet = NO_ERROR;
@@ -196,29 +184,28 @@ int get_next_frame(RtspStream* _pS)
         if (pPkt->stream_index == m_nVideoStreamIndex)
         {
             clean_up_frame(&m_pVideoFrame);
-            nRet = decompress_packet(&_pS, m_nVideoStreamIndex, &pFrame, &pPkt);
+            nRet = decompress_packet(m_nVideoStreamIndex, &pFrame, &pPkt);
             if (!nRet)
                 m_pVideoFrame = pFrame;
         }
         if (pPkt->stream_index == m_nAudioStreamIndex)
         {
             clean_up_frame(&m_pAudioFrame);
-            nRet = decompress_packet(&_pS, m_nAudioStreamIndex, &pFrame, &pPkt);
+            nRet = decompress_packet(m_nAudioStreamIndex, &pFrame, &pPkt);
             if (!nRet)
                 m_pAudioFrame = pFrame;
         }
-        buffer_frame(m_pStreamWriter, pPkt);
     }
     else
     {
-        set_error_msg(m_pErrMsg, response);
+        //set_error_msg(m_pErrMsg, response);
         nRet = FRAME_DECODE_FAILED;
     }
 
     return nRet;
 }
 
-int format_frame(RtspStream* _pS)
+int RtspStream::format_frame()
 {
     int nRet = NO_ERROR;
     uint8_t* pDst[4] = {m_pFrameBuffer, NULL, NULL, NULL};
@@ -228,20 +215,21 @@ int format_frame(RtspStream* _pS)
                               pDst, pDstLineSize);
     if (nResponse <= 0)
     {
-        set_error_msg(m_pErrMsg, nResponse);
+        //set_error_msg(m_pErrMsg, nResponse);
         nRet = FRAME_FORMAT_FAILED;
     }
     return nRet;
 }
 
-int init_formatter(RtspStream* _pS, enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter,
+int RtspStream::init_formatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter,
                    SwsFilter *_pDstFilter, const double *_pParam)
 {
     m_pSwsScalerContext = sws_getContext(m_nWidth,
-                                              m_nHeight,
-                                              m_pCodecContexts[m_nVideoStreamIndex]->pix_fmt,
-                                              m_nWidth,
-                                              m_nHeight,
-                                              _fmt, _nFlags,
-                                              _pSrcFilter, _pDstFilter, _pParam);
+                                         m_nHeight,
+                                         m_vCodecContexts[m_nVideoStreamIndex]->pix_fmt,
+                                         m_nWidth,
+                                         m_nHeight,
+                                         _fmt, _nFlags,
+                                         _pSrcFilter, _pDstFilter, _pParam);
+    return 0;
 }

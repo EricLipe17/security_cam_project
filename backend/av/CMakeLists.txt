@@ -30,7 +30,7 @@ set(SRC src/RtspStream.cpp
         src/Transcode.cpp
         src/StreamWriter.cpp)
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} STATIC
         ${SRC}
         ${HEADERS}
 )

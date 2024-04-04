@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <vector>
 
 extern "C" {
     #include <libavcodec/avcodec.h>
@@ -14,9 +15,9 @@ class RtspStream {
         const char*  m_pURL;
         AVFormatContext *m_pFormatContext;
         AVDictionary *m_pOpts;
-        AVCodecParameters** m_pCodecParams;
-        const AVCodec** m_pCodecs;
-        AVCodecContext** m_pCodecContexts;
+        std::vector<AVCodecParameters*> m_vCodecParams;
+        std::vector<const AVCodec*> m_vCodecs;
+        std::vector<AVCodecContext*> m_vCodecContexts;
         struct SwsContext* m_pSwsScalerContext;
         unsigned int m_nNumCodecContainers;
         AVFrame* m_pVideoFrame;
@@ -31,7 +32,7 @@ class RtspStream {
         char* m_pErrMsg;
 
         int init_stream();
-        int init_buffers();
+        int init_buffers(int _nMaxTries);
 
     public:
         RtspStream(const char*  _pURL);

@@ -36,18 +36,39 @@ typedef struct StreamContext
     int m_nAudioIndex;
 } StreamContext;
 
-typedef struct TranscodeContext
+class TranscodeContext
 {
+    private:
     StreamContext* m_pEncoderCtx;
     StreamContext* m_pDecoderCtx;
     StreamingParams* m_pOutParams;
     AVDictionary* m_pMuxer_Opts;
     AVRational m_nSrcFrameRate;
-} TranscodeContext;
 
-TranscodeContext* alloc_transcoder();
-void free_transcoder(TranscodeContext* _pT);
-int init_transcoder(TranscodeContext* _pT, StreamingParams* _pParams, AVFormatContext* _pDecodeCtx, const char* _pFN);
-int transcode_audio(TranscodeContext* _pT, AVPacket* _pInputPkt, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
-int transcode_video(TranscodeContext* _pT, AVPacket* _pInputPkt, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
-int rollover_split(TranscodeContext* _pT);
+    int transcode_audio(AVPacket* _pInputPkt, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
+    int transcode_video(AVPacket* _pInputPkt, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
+
+    public:
+    TranscodeContext(StreamingParams* _pParams, AVFormatContext* _pDecodeCtx, char* _pFN);
+    ~TranscodeContext();
+    int rollover_split();
+    AVFormatContext* GetDecoderFmtCtx();
+    AVRational GetSrcFrameRate();
+    AVDictionary** GetMuxerOpts();
+    int init_output_filename();
+    int init_video_encoder(StreamContext* _pCtx, AVCodecContext* _pDecoderCodecCtx, AVRational framerate, StreamingParams params);
+    int init_audio_encoder(StreamContext* _pCtx, int sample_rate, StreamingParams params);
+    int fill_stream_info(AVStream* _pStream, const AVCodec** _ppCodec, AVCodecContext** _ppCodecCtx);
+    int get_stream_refs(StreamContext* _pInCtx);
+    int init_decoder_stream_ctx(StreamContext** _ppInCtx, const AVFormatContext* _pDecodeCtx);
+    int init_default_params(StreamingParams** _ppParams);
+    int init_context(StreamingParams* _pParams);
+    int encode_video(StreamContext* _pDecodeCtx, StreamContext* _pEncodeCtx, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
+    int encode_audio(StreamContext* _pDecodeCtx, StreamContext* _pEncodeCtx, AVFrame* _pInputFrame, AVPacket** _ppOutPkt_);
+    int remux(AVPacket** _ppInputPkt, const char _nVideo, AVPacket** _ppOutputPkt_);
+};
+
+
+
+
+

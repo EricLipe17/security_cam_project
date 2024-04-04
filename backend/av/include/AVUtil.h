@@ -1,14 +1,17 @@
 #pragma once
 
 #include <ctime>
+#include <string>
 
 extern "C" {
     #include <libavcodec/avcodec.h>
 }
 
-static void set_error_msg(char* _pErrMsg, const int _nResponse)
+static std::string get_error_msg(const int _nResponse)
 {
-    // memcpy(_pErrMsg, av_err2str(_nResponse), AV_ERROR_MAX_STRING_SIZE);
+    std::string szResponse(AV_ERROR_MAX_STRING_SIZE, 'x');
+    av_strerror(_nResponse, const_cast<char*>(szResponse.c_str()), AV_ERROR_MAX_STRING_SIZE);
+    return szResponse;
 }
 
 static void clean_up_pkt_frame(AVFrame** _pFrame, AVPacket** _pPkt)
