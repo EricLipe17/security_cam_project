@@ -131,6 +131,7 @@ PATH="$FFMPEG_BIN:$PATH" PKG_CONFIG_PATH="$FFMPEG_BUILD/lib/pkgconfig" ./configu
   --extra-libs="-lpthread -lm" \
   --ld="g++" \
   --bindir="$FFMPEG_BIN" \
+  --enable-shared \
   --enable-gpl \
   --enable-gnutls \
   --enable-libaom \
