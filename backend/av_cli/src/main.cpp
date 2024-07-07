@@ -7,78 +7,56 @@ extern "C" {
 
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 
 #include "Transcode.h"
+#include "RtspStream.h"
 #include "StreamWriter.h"
 
-//typedef struct StreamingParams {
-//    char m_nRemuxVideo;
-//    char m_nRemuxAudio;
-//    char *m_pOutExt;
-//    char *m_pMuxerOptKey;
-//    char *m_pMuxerOptVal;
-//    char *video_codec;
-//    char *audio_codec;
-//    char *m_pCodecPrivKey;
-//    char *m_pCodecPrivVal;
-//} StreamingParams;
-//
-//typedef struct TranscodeContext {
-//    AVFormatContext *m_pFormatCtx;
-//    AVCodec *m_pVideoCodec;
-//    AVCodec *m_pAudioCode;
-//    AVStream *video_avs;
-//    AVStream *audio_avs;
-//    AVCodecContext *video_avcc;
-//    AVCodecContext *audio_avcc;
-//    int video_index;
-//    int audio_index;
-//    char *filename;
-//} TranscodeContext;
-//
-int fill_stream_info2(AVStream *avs, const AVCodec **avc, AVCodecContext **avcc) {
-    *avc = avcodec_find_decoder(avs->codecpar->codec_id);
-    if (!*avc) {av_log(NULL, AV_LOG_ERROR, "failed to find the codec"); return -1;}
 
-    *avcc = avcodec_alloc_context3(*avc);
-    if (!*avcc) {av_log(NULL, AV_LOG_ERROR, "failed to alloc memory for codec context"); return -1;}
+// int fill_stream_info2(AVStream *avs, const AVCodec **avc, AVCodecContext **avcc) {
+//     *avc = avcodec_find_decoder(avs->codecpar->codec_id);
+//     if (!*avc) {av_log(NULL, AV_LOG_ERROR, "failed to find the codec"); return -1;}
 
-    if (avcodec_parameters_to_context(*avcc, avs->codecpar) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to fill codec context"); return -1;}
+//     *avcc = avcodec_alloc_context3(*avc);
+//     if (!*avcc) {av_log(NULL, AV_LOG_ERROR, "failed to alloc memory for codec context"); return -1;}
 
-    if (avcodec_open2(*avcc, *avc, NULL) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to open codec"); return -1;}
-    return 0;
-}
+//     if (avcodec_parameters_to_context(*avcc, avs->codecpar) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to fill codec context"); return -1;}
 
-int open_media2(const char *in_filename, AVFormatContext **avfc) {
-    *avfc = avformat_alloc_context();
-    if (!*avfc) {av_log(NULL, AV_LOG_ERROR, "failed to alloc memory for format"); return -1;}
+//     if (avcodec_open2(*avcc, *avc, NULL) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to open codec"); return -1;}
+//     return 0;
+// }
 
-    if (avformat_open_input(avfc, in_filename, NULL, NULL) != 0) {av_log(NULL, AV_LOG_ERROR, "failed to open input file %s", in_filename); return -1;}
+// int open_media2(const char *in_filename, AVFormatContext **avfc) {
+//     *avfc = avformat_alloc_context();
+//     if (!*avfc) {av_log(NULL, AV_LOG_ERROR, "failed to alloc memory for format"); return -1;}
 
-    if (avformat_find_stream_info(*avfc, NULL) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to get stream info"); return -1;}
-    return 0;
-}
+//     if (avformat_open_input(avfc, in_filename, NULL, NULL) != 0) {av_log(NULL, AV_LOG_ERROR, "failed to open input file %s", in_filename); return -1;}
 
-int prepare_decoder2(StreamContext *sc) {
-    for (int i = 0; i < sc->m_pFormatCtx->nb_streams; i++)
-    {
-        if (sc->m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            sc->m_pVideoStream = sc->m_pFormatCtx->streams[i];
-            sc->m_nVideoIndex = i;
+//     if (avformat_find_stream_info(*avfc, NULL) < 0) {av_log(NULL, AV_LOG_ERROR, "failed to get stream info"); return -1;}
+//     return 0;
+// }
 
-            if (fill_stream_info2(sc->m_pVideoStream, &sc->m_pVideoCodec, &sc->m_pVideoCodecCtx)) {return -1;}
-        } else if (sc->m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            sc->m_pAudioStream = sc->m_pFormatCtx->streams[i];
-            sc->m_nAudioIndex = i;
+// int prepare_decoder2(StreamContext *sc) {
+//     for (int i = 0; i < sc->m_pFormatCtx->nb_streams; i++)
+//     {
+//         if (sc->m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+//             sc->m_pVideoStream = sc->m_pFormatCtx->streams[i];
+//             sc->m_nVideoIndex = i;
 
-            if (fill_stream_info2(sc->m_pAudioStream, &sc->m_pAudioCodec, &sc->m_pAudioCodecCtx)) {return -1;}
-        } else {
-            av_log(NULL, AV_LOG_ERROR, "skipping streams other than audio and video");
-        }
-    }
+//             if (fill_stream_info2(sc->m_pVideoStream, &sc->m_pVideoCodec, &sc->m_pVideoCodecCtx)) {return -1;}
+//         } else if (sc->m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+//             sc->m_pAudioStream = sc->m_pFormatCtx->streams[i];
+//             sc->m_nAudioIndex = i;
 
-    return 0;
-}
+//             if (fill_stream_info2(sc->m_pAudioStream, &sc->m_pAudioCodec, &sc->m_pAudioCodecCtx)) {return -1;}
+//         } else {
+//             av_log(NULL, AV_LOG_ERROR, "skipping streams other than audio and video");
+//         }
+//     }
+
+//     return 0;
+// }
 //
 //int prepare_video_encoder(TranscodeContext *sc, AVCodecContext *decoder_ctx, AVRational input_framerate, StreamingParams sp) {
 //    sc->video_avs = avformat_new_stream(sc->m_pFormatCtx, NULL);
@@ -257,14 +235,24 @@ int main(int argc, char *argv[])
      * Audio -> remuxed (untouched)
      * MP4 - MP4
      */
-    StreamingParams sp = {0};
-    sp.m_nRemuxAudio = 0;
-    sp.m_nRemuxVideo = 0;
-    sp.m_nVideoID = AV_CODEC_ID_HEVC;
-    sp.m_pCodecPrivKey = "x265-params";
-    sp.m_pCodecPrivVal = "keyint=60:min-keyint=60:scenecut=0";
-    sp.m_nAudioID = AV_CODEC_ID_AAC;
-    sp.m_pOutExt = "mp4";
+    // StreamingParams sp = {0};
+    // sp.m_nRemuxAudio = 0;
+    // sp.m_nRemuxVideo = 0;
+    // sp.m_nVideoID = AV_CODEC_ID_HEVC;
+    // sp.m_pCodecPrivKey = "x265-params";
+    // sp.m_pCodecPrivVal = "keyint=60:min-keyint=60:scenecut=0";
+    // sp.m_nAudioID = AV_CODEC_ID_AAC;
+    // sp.m_pOutExt = "mp4";
+
+    av_log_set_level( AV_LOG_TRACE );
+    
+    // TODO: Move global ffmpeg initialization/de-initialization out of this class to avoid issues
+    avformat_network_init();
+    RtspStream* pStream = new RtspStream("rtsp://192.168.10:8554/local-loop");
+    int index = 0;
+    while (pStream->GetNextFrame() == 0) {
+        std::cout << "We're getting frames! IDX: " << index++ << std::endl;
+    }
 
     /*
      * H264 -> H264 (fixed gop)

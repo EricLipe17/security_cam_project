@@ -31,18 +31,15 @@ class RtspStream {
         int m_nAudioStreamIndex;
         char* m_pErrMsg;
 
-        int init_stream();
-        int init_buffers(int _nMaxTries);
+        int initStream();
+        int initBuffers(int _nMaxTries);
+        int initFormatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter, 
+                           SwsFilter *_pDstFilter, const double *_pParam);
+        int formatFrame();
+        int decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt);
 
     public:
         RtspStream(const char*  _pURL);
         ~RtspStream();
-
-        
-        int get_next_frame();
-        int format_frame();
-        int init_formatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter, 
-                           SwsFilter *_pDstFilter, const double *_pParam);
-        int decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt);
-
+        int GetNextFrame();
 };
