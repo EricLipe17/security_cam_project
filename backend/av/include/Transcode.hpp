@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RtspStream.h"
+#include "Stream.hpp"
 
 extern "C" {
     #include <libavcodec/avcodec.h>

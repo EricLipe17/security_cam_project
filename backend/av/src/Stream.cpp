@@ -1,8 +1,8 @@
-#include "RtspStream.h"
-#include "AV.h"
-#include "AVUtil.h"
+#include "Stream.hpp"
+#include "AV.hpp"
+#include "AVUtil.hpp"
 
-int RtspStream::decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt)
+int Stream::decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt)
 {
     int nResponse = avcodec_send_packet(m_vCodecContexts[_nCtxIndex], *_pPkt);
     if (nResponse < 0)
@@ -20,14 +20,14 @@ int RtspStream::decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPac
     return NO_ERROR;
 }
 
-RtspStream::RtspStream(const char* _pUrl) 
+Stream::Stream(const char* _pUrl) 
 {
     // av_log_set_level( AV_LOG_DEBUG );
     
     // // TODO: Move global ffmpeg initialization/de-initialization out of this class to avoid issues
     // avformat_network_init();
 
-    m_pURL = _pUrl;
+    m_pUrl = _pUrl;
     m_pSwsScalerContext = NULL;
     m_pFormatContext = NULL;
     m_pOpts = NULL;
@@ -45,7 +45,7 @@ RtspStream::RtspStream(const char* _pUrl)
     initFormatter(AV_PIX_FMT_RGBA, 0, NULL, NULL, NULL);
 }
 
-RtspStream::~RtspStream()
+Stream::~Stream()
 {
     // TODO: Verify this is actuall freeing everything
     av_frame_free(&m_pVideoFrame);
@@ -85,12 +85,12 @@ RtspStream::~RtspStream()
     avformat_network_deinit();
 }
 
-int RtspStream::initStream()
+int Stream::initStream()
 {
     // Open stream
     m_pFormatContext = avformat_alloc_context();
-    // av_dict_set(&m_pOpts, "rtsp_transport", "tcp", 0);
-    if (avformat_open_input(&m_pFormatContext, "/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4", NULL, &m_pOpts))
+    av_dict_set(&m_pOpts, "rtsp_transport", "tcp", 0);
+    if (avformat_open_input(&m_pFormatContext, m_pUrl, NULL, &m_pOpts))
         return STREAM_OPEN_FAILED;
     
     m_nNumCodecContainers = m_pFormatContext->nb_streams;
@@ -137,7 +137,7 @@ int RtspStream::initStream()
     return 0;
 }
 
-int RtspStream::initBuffers(int _nMaxTries)
+int Stream::initBuffers(int _nMaxTries)
 {
     AVFrame* pFrame = av_frame_alloc();
     AVPacket* pPkt = av_packet_alloc();
@@ -178,7 +178,7 @@ int RtspStream::initBuffers(int _nMaxTries)
     return nRet;
 }
 
-int RtspStream::GetNextFrame()
+int Stream::GetNextFrame()
 {
     // TODO: This has a memory leak wrt the packet and frame
     AVFrame* pFrame = av_frame_alloc();
@@ -212,7 +212,7 @@ int RtspStream::GetNextFrame()
     return nRet;
 }
 
-int RtspStream::formatFrame()
+int Stream::formatFrame()
 {
     int nRet = NO_ERROR;
     uint8_t* pDst[4] = {m_pFrameBuffer, NULL, NULL, NULL};
@@ -228,7 +228,7 @@ int RtspStream::formatFrame()
     return nRet;
 }
 
-int RtspStream::initFormatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter,
+int Stream::initFormatter(enum AVPixelFormat _fmt, int _nFlags, SwsFilter *_pSrcFilter,
                    SwsFilter *_pDstFilter, const double *_pParam)
 {
     m_pSwsScalerContext = sws_getContext(m_nWidth,

@@ -1,6 +1,6 @@
-#include "StreamWriter.h"
+#include "StreamWriter.hpp"
 
-#include "AVUtil.h"
+#include "AVUtil.hpp"
 
 #include <math.h>
 

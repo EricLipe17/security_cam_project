@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Transcode.h"
+#include "Transcode.hpp"
 
 extern "C" {
     #include <libavformat/avformat.h>

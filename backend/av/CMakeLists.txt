@@ -19,14 +19,14 @@ pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
         libavutil
 )
 
-set(HEADERS include/AV.h
-        include/RtspStream.h
-        include/AVUtil.h
-        include/Transcode.h
-        include/StreamWriter.h
+set(HEADERS include/AV.hpp
+        include/Stream.hpp
+        include/AVUtil.hpp
+        include/Transcode.hpp
+        include/StreamWriter.hpp
         )
 
-set(SRC src/RtspStream.cpp
+set(SRC src/Stream.cpp
         src/Transcode.cpp
         src/StreamWriter.cpp)
 

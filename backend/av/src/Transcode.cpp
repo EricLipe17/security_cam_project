@@ -1,6 +1,6 @@
-#include "Transcode.h"
+#include "Transcode.hpp"
 
-#include "AVUtil.h"
+#include "AVUtil.hpp"
 
 #include <libavutil/timestamp.h>
 #include <libavutil/opt.h>

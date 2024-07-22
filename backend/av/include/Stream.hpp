@@ -10,9 +10,9 @@ extern "C" {
     #include <libswscale/swscale.h>
 }
 
-class RtspStream {
+class Stream {
     private:
-        const char*  m_pURL;
+        const char*  m_pUrl;
         AVFormatContext *m_pFormatContext;
         AVDictionary *m_pOpts;
         std::vector<AVCodecParameters*> m_vCodecParams;
@@ -39,7 +39,7 @@ class RtspStream {
         int decompress_packet(const int _nCtxIndex, AVFrame** _pFrame, AVPacket** _pPkt);
 
     public:
-        RtspStream(const char*  _pURL);
-        ~RtspStream();
+        Stream(const char*  _pURL);
+        ~Stream();
         int GetNextFrame();
 };
