@@ -193,13 +193,15 @@ static int open_output_file(const char *filename)
                 enc_ctx->height = dec_ctx->height;
                 enc_ctx->width = dec_ctx->width;
                 enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
+                enc_ctx->bit_rate = dec_ctx->bit_rate;
+                enc_ctx->framerate = dec_ctx->framerate;
                 /* take first format from list of supported formats */
                 if (encoder->pix_fmts)
                     enc_ctx->pix_fmt = encoder->pix_fmts[0];
                 else
                     enc_ctx->pix_fmt = dec_ctx->pix_fmt;
                 /* video time_base can be set to whatever is handy and supported by encoder */
-                enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
+                enc_ctx->time_base = dec_ctx->time_base;
             } else {
                 enc_ctx->sample_rate = dec_ctx->sample_rate;
                 ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
@@ -549,7 +551,7 @@ int main(int argc, char **argv)
 
     if ((ret = open_input_file("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4")) < 0)
         exit(1);
-    if ((ret = open_output_file("/tmp/transcode/hls/sample_1280x720_surfing_with_audio_new.m3u8")) < 0)
+    if ((ret = open_output_file("sample_1280x720_surfing_with_audio_new.mp4")) < 0)
         exit(1);
     if ((ret = init_filters()) < 0)
         exit(1);
@@ -622,7 +624,7 @@ int main(int argc, char **argv)
         }
     }
 
-    // av_write_trailer(ofmt_ctx);
+    av_write_trailer(ofmt_ctx);
 
     av_packet_free(&packet);
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
