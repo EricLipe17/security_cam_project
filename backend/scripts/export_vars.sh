@@ -18,6 +18,8 @@ echo 'export NVENC_HOME="$THIRD_PARTY/nvenc"' >> ~/.bashrc
 # PKG_CONFIG
 echo 'export PKG_CONFIG_PATH="$FFMPEG_BUILD/lib/pkgconfig"' >> ~/.bashrc
 
+echo 'export LD_LIBRARY_PATH="$FFMPEG_BUILD/lib:$LD_LIBRARY_PATH"' >> ~/.bashrc
+
 echo .
 echo .
 echo PLEASE SOURCE: ~/.bashrc

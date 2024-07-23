@@ -3,6 +3,18 @@ project(av_cli VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(ENV{PKG_CONFIG_PATH} $ENV{FFMPEG_BUILD}/lib/pkgconfig)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
+        libavdevice
+        libavfilter
+        libavformat
+        libavcodec
+        libswresample
+        libswscale
+        libavutil
+)
+
 set(HEADERS)
 
 set(SRC src/main.cpp)
@@ -14,9 +26,10 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}  PRIVATE
         ./include
-        ../av/include
+        # ../av/include
         )
 
 target_link_libraries(${PROJECT_NAME}
-        av
+        # av
+        PkgConfig::ffmpeg
         )
