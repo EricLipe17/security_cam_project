@@ -254,7 +254,13 @@ static int open_output_file(const char *filename)
     }
 
     /* init muxer, write output file header */
-    ret = avformat_write_header(ofmt_ctx, NULL);
+    AVDictionary* pOpts = NULL;
+
+    // Minimal HLS params to segment a file via HLS
+    av_dict_set(&pOpts, "hls_time", "10", 0);
+    av_dict_set(&pOpts, "hls_segment_size", "500000", 0);
+    av_dict_set(&pOpts, "hls_list_size", "0", 0);
+    ret = avformat_write_header(ofmt_ctx, &pOpts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file\n");
         return ret;
@@ -551,7 +557,7 @@ int main(int argc, char **argv)
 
     if ((ret = open_input_file("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4")) < 0)
         exit(1);
-    if ((ret = open_output_file("sample_1280x720_surfing_with_audio_new.mp4")) < 0)
+    if ((ret = open_output_file("sample_1280x720_surfing_with_audio_new.m3u8")) < 0)
         exit(1);
     if ((ret = init_filters()) < 0)
         exit(1);
