@@ -169,7 +169,6 @@ static int open_output_file(const char *filename)
             return AVERROR_UNKNOWN;
         }
 
-        in_stream = ifmt_ctx->streams[i];
         dec_ctx = stream_ctx[i].dec_ctx;
 
         if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO
@@ -234,6 +233,7 @@ static int open_output_file(const char *filename)
             return AVERROR_INVALIDDATA;
         } else {
             /* if this stream must be remuxed */
+            in_stream = ifmt_ctx->streams[i];
             ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Copying parameters for stream #%u failed\n", i);
