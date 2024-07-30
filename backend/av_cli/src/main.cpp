@@ -174,7 +174,17 @@ static int open_output_file(const char *filename)
         if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO
                 || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* in this example, we choose transcoding to same codec */
-            encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            encoder = NULL;
+            // Using different codecs makes this really slow, but it does works.
+            if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+                encoder = avcodec_find_encoder(dec_ctx->codec_id);
+                // encoder = avcodec_find_encoder(AV_CODEC_ID_HEVC);
+            }
+            else {
+                // encoder = avcodec_find_encoder(AV_CODEC_ID_AAC);
+                encoder = avcodec_find_encoder(dec_ctx->codec_id);                
+            }
+
             if (!encoder) {
                 av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
                 return AVERROR_INVALIDDATA;
@@ -185,6 +195,8 @@ static int open_output_file(const char *filename)
                 return AVERROR(ENOMEM);
             }
 
+            enc_ctx->thread_count = 6;
+
             /* In this example, we transcode to same properties (picture size,
              * sample rate etc.). These properties can be changed for output
              * streams easily using filters */
@@ -194,6 +206,8 @@ static int open_output_file(const char *filename)
                 enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                 enc_ctx->bit_rate = dec_ctx->bit_rate;
                 enc_ctx->framerate = dec_ctx->framerate;
+                enc_ctx->gop_size = (int)(2 * enc_ctx->framerate.num / enc_ctx->framerate.den) + 1;
+                enc_ctx->flags = AV_CODEC_FLAG_OUTPUT_CORRUPT & AV_CODEC_FLAG_CLOSED_GOP;
                 /* take first format from list of supported formats */
                 if (encoder->pix_fmts)
                     enc_ctx->pix_fmt = encoder->pix_fmts[0];
