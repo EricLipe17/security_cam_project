@@ -19,16 +19,13 @@ pkg_check_modules(ffmpeg REQUIRED IMPORTED_TARGET
         libavutil
 )
 
-set(HEADERS include/AV.hpp
-        include/Stream.hpp
-        include/AVUtil.hpp
-        include/Transcode.hpp
-        include/StreamWriter.hpp
+set(HEADERS include/Demuxer.hpp
+        include/Muxer.hpp
         )
 
-set(SRC src/Stream.cpp
-        src/Transcode.cpp
-        src/StreamWriter.cpp)
+set(SRC src/Demuxer.cpp
+        src/Muxer.cpp
+        )
 
 add_library(${PROJECT_NAME} STATIC
         ${SRC}
