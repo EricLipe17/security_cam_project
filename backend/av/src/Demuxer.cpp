@@ -19,7 +19,7 @@ Demuxer::~Demuxer() {
     avformat_close_input(&m_pInFmtCtx);
 }
 
-AVFrame* Demuxer::Frame(AVPacket* _pPacket) {
+void Demuxer::Frame(AVPacket* _pPacket) {
     m_nErrCode = av_read_frame(m_pInFmtCtx, _pPacket);
     if (m_nErrCode < 0) return;
 
@@ -46,7 +46,6 @@ AVFrame* Demuxer::Frame(AVPacket* _pPacket) {
 
         pFrame->pts = pFrame->best_effort_timestamp;
         // TODO: the muxer needs to get the frame at this point in time to write it.
-        return pFrame;
     }
 }
 

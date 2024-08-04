@@ -23,5 +23,5 @@ class Demuxer {
    public:
     Demuxer(const char* _pFn, AVDictionary* _pOpts);
     ~Demuxer();
-    AVFrame* Frame(AVPacket* _pPacket);
+    void Frame(AVPacket* _pPacket);
 };
