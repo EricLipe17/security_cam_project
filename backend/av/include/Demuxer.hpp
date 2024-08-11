@@ -1,18 +1,17 @@
 #pragma once
 
+#include "AVUtil.hpp"
+
 extern "C" {
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 }
-
-#include <string>
-#include <vector>
 
 class Demuxer {
    private:
     AVFormatContext* m_pInFmtCtx;
     std::vector<AVCodecContext*> m_vDecCodecCtxs;
-    std::vector<AVFrame*> m_vDecFrames;
+    FrameBuffer m_buffer;
+    AVPacket* m_pPacket;
     AVDictionary* m_pOpts;
     const char* m_pFn;
     int m_nErrCode;
@@ -23,5 +22,5 @@ class Demuxer {
    public:
     Demuxer(const char* _pFn, AVDictionary* _pOpts);
     ~Demuxer();
-    void Frame(AVPacket* _pPacket);
+    void Frame();
 };

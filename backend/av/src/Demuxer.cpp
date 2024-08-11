@@ -4,8 +4,7 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
     : m_pInFmtCtx{nullptr},
       m_pFn{_pFn},
       m_pOpts{_pOpts},
-      m_vDecCodecCtxs{nullptr, nullptr},
-      m_vDecFrames{nullptr, nullptr},
+      m_pPacket{av_packet_alloc()},
       m_nErrCode{0} {
     openInput();
 }
@@ -13,31 +12,37 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
 Demuxer::~Demuxer() {
     for (int i = 0; i < m_vDecCodecCtxs.size(); i++) {
         avcodec_free_context(&m_vDecCodecCtxs.at(i));
-        av_frame_free(&m_vDecFrames.at(i));
+        AVFrame* pFrame = m_buffer[i];
+        av_frame_free(&pFrame);
     }
 
     avformat_close_input(&m_pInFmtCtx);
 }
 
-void Demuxer::Frame(AVPacket* _pPacket) {
-    m_nErrCode = av_read_frame(m_pInFmtCtx, _pPacket);
+void Demuxer::Frame() {
+    m_nErrCode = av_read_frame(m_pInFmtCtx, m_pPacket);
     if (m_nErrCode < 0) return;
 
-    unsigned int nStreamIndex = _pPacket->stream_index;
+    unsigned int nStreamIndex = m_pPacket->stream_index;
     av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
 
     AVCodecContext* pDecCtx = m_vDecCodecCtxs.at(nStreamIndex);
-    AVFrame* pFrame = m_vDecFrames.at(nStreamIndex);
 
-    av_packet_rescale_ts(_pPacket, m_pInFmtCtx->streams[nStreamIndex]->time_base,
+    av_packet_rescale_ts(m_pPacket, m_pInFmtCtx->streams[nStreamIndex]->time_base,
                          pDecCtx->time_base);
-    m_nErrCode = avcodec_send_packet(pDecCtx, _pPacket);
+    m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
         return;
     }
 
+    unsigned int nIndex = 0;
+    std::size_t nSize = m_buffer.Size();
     while (m_nErrCode >= 0) {
+        m_buffer.AllocFrame();
+        AVFrame* pFrame = m_buffer.GetFrame();
+        m_buffer.IncrementPtr();
+
         m_nErrCode = avcodec_receive_frame(pDecCtx, pFrame);
         if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
             return;
@@ -62,11 +67,6 @@ void Demuxer::openInput() {
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
         return;
-    }
-
-    if (m_pInFmtCtx->nb_streams > m_vDecCodecCtxs.size()) {
-        m_vDecCodecCtxs.reserve(m_pInFmtCtx->nb_streams);
-        m_vDecFrames.reserve(m_pInFmtCtx->nb_streams);
     }
 
     for (nStreamIndex = 0; nStreamIndex < m_pInFmtCtx->nb_streams; nStreamIndex++) {
@@ -106,13 +106,7 @@ void Demuxer::openInput() {
                 return;
             }
         }
-        m_vDecCodecCtxs[nStreamIndex] = pCodecCtx;
-
-        m_vDecFrames[nStreamIndex] = av_frame_alloc();
-        if (m_vDecFrames[nStreamIndex]) {
-            m_nErrCode = AVERROR(ENOMEM);
-            return;
-        }
+        m_vDecCodecCtxs.push_back(pCodecCtx);
     }
 
     av_dump_format(m_pInFmtCtx, 0, m_pFn, 0);
