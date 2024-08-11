@@ -20,6 +20,7 @@ Demuxer::~Demuxer() {
 }
 
 void Demuxer::Frame() {
+    av_packet_unref(m_pPacket);
     m_nErrCode = av_read_frame(m_pInFmtCtx, m_pPacket);
     if (m_nErrCode < 0) return;
 
@@ -39,9 +40,7 @@ void Demuxer::Frame() {
     unsigned int nIndex = 0;
     std::size_t nSize = m_buffer.Size();
     while (m_nErrCode >= 0) {
-        m_buffer.AllocFrame();
-        AVFrame* pFrame = m_buffer.GetFrame();
-        m_buffer.IncrementPtr();
+        AVFrame* pFrame = m_buffer.GetNextFreeFrame();
 
         m_nErrCode = avcodec_receive_frame(pDecCtx, pFrame);
         if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
@@ -50,6 +49,8 @@ void Demuxer::Frame() {
             exit(1);
 
         pFrame->pts = pFrame->best_effort_timestamp;
+        m_buffer.IncrementPtr();
+        m_buffer.AllocFrame();
         // TODO: the muxer needs to get the frame at this point in time to write it.
     }
 }
