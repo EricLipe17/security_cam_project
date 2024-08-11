@@ -1,7 +1,7 @@
 #include "Demuxer.hpp"
 
 Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
-    : m_pInFmtCtx{nullptr},
+    : m_pFmtCtx{nullptr},
       m_pFn{_pFn},
       m_pOpts{_pOpts},
       m_pPacket{av_packet_alloc()},
@@ -10,26 +10,26 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
 }
 
 Demuxer::~Demuxer() {
-    for (int i = 0; i < m_vDecCodecCtxs.size(); i++) {
-        avcodec_free_context(&m_vDecCodecCtxs.at(i));
+    for (int i = 0; i < m_vCodecCtxs.size(); i++) {
+        avcodec_free_context(&m_vCodecCtxs.at(i));
         AVFrame* pFrame = m_buffer[i];
         av_frame_free(&pFrame);
     }
 
-    avformat_close_input(&m_pInFmtCtx);
+    avformat_close_input(&m_pFmtCtx);
 }
 
 void Demuxer::Frame() {
     av_packet_unref(m_pPacket);
-    m_nErrCode = av_read_frame(m_pInFmtCtx, m_pPacket);
+    m_nErrCode = av_read_frame(m_pFmtCtx, m_pPacket);
     if (m_nErrCode < 0) return;
 
     unsigned int nStreamIndex = m_pPacket->stream_index;
     av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
 
-    AVCodecContext* pDecCtx = m_vDecCodecCtxs.at(nStreamIndex);
+    AVCodecContext* pDecCtx = m_vCodecCtxs.at(nStreamIndex);
 
-    av_packet_rescale_ts(m_pPacket, m_pInFmtCtx->streams[nStreamIndex]->time_base,
+    av_packet_rescale_ts(m_pPacket, m_pFmtCtx->streams[nStreamIndex]->time_base,
                          pDecCtx->time_base);
     m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
     if (m_nErrCode < 0) {
@@ -58,20 +58,20 @@ void Demuxer::Frame() {
 void Demuxer::openInput() {
     unsigned int nStreamIndex;
 
-    m_nErrCode = avformat_open_input(&m_pInFmtCtx, m_pFn, NULL, NULL);
+    m_nErrCode = avformat_open_input(&m_pFmtCtx, m_pFn, NULL, NULL);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
         return;
     }
 
-    m_nErrCode = avformat_find_stream_info(m_pInFmtCtx, NULL);
+    m_nErrCode = avformat_find_stream_info(m_pFmtCtx, NULL);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
         return;
     }
 
-    for (nStreamIndex = 0; nStreamIndex < m_pInFmtCtx->nb_streams; nStreamIndex++) {
-        AVStream* pStream = m_pInFmtCtx->streams[nStreamIndex];
+    for (nStreamIndex = 0; nStreamIndex < m_pFmtCtx->nb_streams; nStreamIndex++) {
+        AVStream* pStream = m_pFmtCtx->streams[nStreamIndex];
         const AVCodec* pDecoder = avcodec_find_decoder(pStream->codecpar->codec_id);
         AVCodecContext* pCodecCtx;
         if (!pDecoder) {
@@ -99,7 +99,7 @@ void Demuxer::openInput() {
         if (pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO ||
             pCodecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO)
-                pCodecCtx->framerate = av_guess_frame_rate(m_pInFmtCtx, pStream, NULL);
+                pCodecCtx->framerate = av_guess_frame_rate(m_pFmtCtx, pStream, NULL);
             /* Open decoder */
             m_nErrCode = avcodec_open2(pCodecCtx, pDecoder, NULL);
             if (m_nErrCode < 0) {
@@ -107,8 +107,8 @@ void Demuxer::openInput() {
                 return;
             }
         }
-        m_vDecCodecCtxs.push_back(pCodecCtx);
+        m_vCodecCtxs.push_back(pCodecCtx);
     }
 
-    av_dump_format(m_pInFmtCtx, 0, m_pFn, 0);
+    av_dump_format(m_pFmtCtx, 0, m_pFn, 0);
 }

@@ -17,13 +17,21 @@ struct FilteringContext {
     AVFilterContext* m_pBufferSrcCtx;
     AVFilterGraph* m_pFilterGraph;
 
-    AVPacket* enc_pkt;
+    AVPacket* m_pPacket;
     AVFrame* pFilteredFrame;
 };
 
 class Muxer {
    private:
     FilteringContext m_filterCtx;
+    AVFormatContext* m_pOutFmtCtx;
+    std::vector<AVCodecContext*> m_vCodecCtxs;
+    AVFormatContext* m_pDemuxerFmtCtx;
+    std::vector<AVCodecContext*> m_vDemuxerCodecCtxs;
+    AVCodecContext* m_pEncCodecCtx;
+    const char* m_pFn;
+    int m_nErrCode;
+    std::string m_szErrMsg;
 
     void openInput();
     void initFilter();
@@ -31,7 +39,8 @@ class Muxer {
     void encodeWriteFrame();
 
    public:
-    Muxer(const char* _pFn, AVDictionary* _pOpts);
+    Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
+          const char* _pFn, AVDictionary* _pOpts);
     ~Muxer();
     void InitFilters();
     void WriteBuffer(const FrameBuffer& _demuxerBuf);

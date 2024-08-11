@@ -8,8 +8,8 @@ extern "C" {
 
 class Demuxer {
    private:
-    AVFormatContext* m_pInFmtCtx;
-    std::vector<AVCodecContext*> m_vDecCodecCtxs;
+    AVFormatContext* m_pFmtCtx;
+    std::vector<AVCodecContext*> m_vCodecCtxs;
     FrameBuffer m_buffer;
     AVPacket* m_pPacket;
     AVDictionary* m_pOpts;
