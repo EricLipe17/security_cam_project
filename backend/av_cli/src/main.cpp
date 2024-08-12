@@ -15,6 +15,7 @@ extern "C" {
 #include <memory>
 
 #include "Demuxer.hpp"
+#include "Muxer.hpp"
 
 // #include "Transcode.hpp"
 // #include "Stream.hpp"
@@ -68,15 +69,15 @@ extern "C" {
 
 static AVFormatContext* ifmt_ctx;
 static AVFormatContext* ofmt_ctx;
-typedef struct FilteringContext {
+typedef struct ExampleFilteringContext {
     AVFilterContext* buffersink_ctx;
     AVFilterContext* buffersrc_ctx;
     AVFilterGraph* filter_graph;
 
     AVPacket* enc_pkt;
     AVFrame* filtered_frame;
-} FilteringContext;
-static FilteringContext* filter_ctx;
+} ExampleFilteringContext;
+static ExampleFilteringContext* filter_ctx;
 
 typedef struct StreamContext {
     AVCodecContext* dec_ctx;
@@ -283,8 +284,8 @@ static int open_output_file(const char* filename) {
     return 0;
 }
 
-static int init_filter(FilteringContext* fctx, AVCodecContext* dec_ctx, AVCodecContext* enc_ctx,
-                       const char* filter_spec) {
+static int init_filter(ExampleFilteringContext* fctx, AVCodecContext* dec_ctx,
+                       AVCodecContext* enc_ctx, const char* filter_spec) {
     char args[512];
     int ret = 0;
     const AVFilter* buffersrc = NULL;
@@ -426,8 +427,8 @@ static int init_filters(void) {
     const char* filter_spec;
     unsigned int i;
     int ret;
-    filter_ctx =
-        static_cast<FilteringContext*>(av_malloc_array(ifmt_ctx->nb_streams, sizeof(*filter_ctx)));
+    filter_ctx = static_cast<ExampleFilteringContext*>(
+        av_malloc_array(ifmt_ctx->nb_streams, sizeof(*filter_ctx)));
     if (!filter_ctx) return AVERROR(ENOMEM);
 
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
@@ -457,7 +458,7 @@ static int init_filters(void) {
 
 static int encode_write_frame(unsigned int stream_index, int flush) {
     StreamContext* stream = &stream_ctx[stream_index];
-    FilteringContext* filter = &filter_ctx[stream_index];
+    ExampleFilteringContext* filter = &filter_ctx[stream_index];
     AVFrame* filt_frame = flush ? NULL : filter->filtered_frame;
     AVPacket* enc_pkt = filter->enc_pkt;
     int ret;
@@ -489,7 +490,7 @@ static int encode_write_frame(unsigned int stream_index, int flush) {
 }
 
 static int filter_encode_write_frame(AVFrame* frame, unsigned int stream_index) {
-    FilteringContext* filter = &filter_ctx[stream_index];
+    ExampleFilteringContext* filter = &filter_ctx[stream_index];
     int ret;
 
     av_log(NULL, AV_LOG_INFO, "Pushing decoded frame to filters\n");
@@ -541,8 +542,11 @@ int main(int argc, char** argv) {
     // }
 
     Demuxer demux("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4", NULL);
-    while (true) {
-        demux.Frame();
+    Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "sample_1280x720_surfing_with_audio_new.m3u8",
+              NULL);
+    int nErrCode = 0;
+    while (nErrCode >= 0) {
+        nErrCode = demux.Frame(mux);
     }
 
     if ((ret = open_input_file("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4")) < 0)

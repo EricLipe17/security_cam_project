@@ -4,6 +4,7 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
     : m_pFmtCtx{nullptr},
       m_pFn{_pFn},
       m_pOpts{_pOpts},
+      m_pFrame{av_frame_alloc()},
       m_pPacket{av_packet_alloc()},
       m_nErrCode{0} {
     openInput();
@@ -12,17 +13,17 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
 Demuxer::~Demuxer() {
     for (int i = 0; i < m_vCodecCtxs.size(); i++) {
         avcodec_free_context(&m_vCodecCtxs.at(i));
-        AVFrame* pFrame = m_buffer[i];
-        av_frame_free(&pFrame);
+        // AVFrame* pFrame = m_buffer[i];
+        av_frame_free(&m_pFrame);
     }
 
     avformat_close_input(&m_pFmtCtx);
 }
 
-void Demuxer::Frame() {
+int Demuxer::Frame(Muxer& _muxer) {
     av_packet_unref(m_pPacket);
     m_nErrCode = av_read_frame(m_pFmtCtx, m_pPacket);
-    if (m_nErrCode < 0) return;
+    if (m_nErrCode < 0) return m_nErrCode;
 
     unsigned int nStreamIndex = m_pPacket->stream_index;
     av_log(NULL, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
@@ -34,40 +35,42 @@ void Demuxer::Frame() {
     m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Decoding failed\n");
-        return;
+        return m_nErrCode;
     }
 
     unsigned int nIndex = 0;
-    std::size_t nSize = m_buffer.Size();
+    // std::size_t nSize = m_buffer.Size();
     while (m_nErrCode >= 0) {
-        AVFrame* pFrame = m_buffer.GetNextFreeFrame();
+        // AVFrame* pFrame = m_buffer.GetNextFreeFrame();
 
-        m_nErrCode = avcodec_receive_frame(pDecCtx, pFrame);
+        m_nErrCode = avcodec_receive_frame(pDecCtx, m_pFrame);
         if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
-            return;
+            return m_nErrCode;
         else if (m_nErrCode < 0)
             exit(1);
 
-        pFrame->pts = pFrame->best_effort_timestamp;
-        m_buffer.IncrementPtr();
-        m_buffer.AllocFrame();
+        m_pFrame->pts = m_pFrame->best_effort_timestamp;
+        // m_buffer.IncrementPtr();
+        // m_buffer.AllocFrame();
         // TODO: the muxer needs to get the frame at this point in time to write it.
+        m_nErrCode = _muxer.WriteFrame(m_pFrame, nStreamIndex);
     }
+    return m_nErrCode;
 }
 
-void Demuxer::openInput() {
+int Demuxer::openInput() {
     unsigned int nStreamIndex;
 
     m_nErrCode = avformat_open_input(&m_pFmtCtx, m_pFn, NULL, NULL);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
-        return;
+        return m_nErrCode;
     }
 
     m_nErrCode = avformat_find_stream_info(m_pFmtCtx, NULL);
     if (m_nErrCode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
-        return;
+        return m_nErrCode;
     }
 
     for (nStreamIndex = 0; nStreamIndex < m_pFmtCtx->nb_streams; nStreamIndex++) {
@@ -77,7 +80,7 @@ void Demuxer::openInput() {
         if (!pDecoder) {
             av_log(NULL, AV_LOG_ERROR, "Failed to find decoder for stream #%u\n", nStreamIndex);
             m_nErrCode = AVERROR_DECODER_NOT_FOUND;
-            return;
+            return m_nErrCode;
         }
 
         pCodecCtx = avcodec_alloc_context3(pDecoder);
@@ -85,7 +88,7 @@ void Demuxer::openInput() {
             av_log(NULL, AV_LOG_ERROR, "Failed to allocate the decoder context for stream #%u\n",
                    nStreamIndex);
             m_nErrCode = AVERROR(ENOMEM);
-            return;
+            return m_nErrCode;
         }
         m_nErrCode = avcodec_parameters_to_context(pCodecCtx, pStream->codecpar);
         if (m_nErrCode < 0) {
@@ -93,7 +96,7 @@ void Demuxer::openInput() {
                    "Failed to copy decoder parameters to input decoder context "
                    "for stream #%u\n",
                    nStreamIndex);
-            return;
+            return m_nErrCode;
         }
         /* Reencode video & audio and remux subtitles etc. */
         if (pCodecCtx->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -104,11 +107,12 @@ void Demuxer::openInput() {
             m_nErrCode = avcodec_open2(pCodecCtx, pDecoder, NULL);
             if (m_nErrCode < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Failed to open decoder for stream #%u\n", nStreamIndex);
-                return;
+                return m_nErrCode;
             }
         }
         m_vCodecCtxs.push_back(pCodecCtx);
     }
 
     av_dump_format(m_pFmtCtx, 0, m_pFn, 0);
+    return m_nErrCode;
 }

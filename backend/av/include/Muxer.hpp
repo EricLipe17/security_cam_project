@@ -18,31 +18,33 @@ struct FilteringContext {
     AVFilterGraph* m_pFilterGraph;
 
     AVPacket* m_pPacket;
-    AVFrame* pFilteredFrame;
+    AVFrame* m_pFrame;
 };
 
 class Muxer {
    private:
-    FilteringContext m_filterCtx;
+    std::vector<FilteringContext> m_vFilterCtxs;
     AVFormatContext* m_pOutFmtCtx;
     std::vector<AVCodecContext*> m_vCodecCtxs;
     AVFormatContext* m_pDemuxerFmtCtx;
-    std::vector<AVCodecContext*> m_vDemuxerCodecCtxs;
+    std::vector<AVCodecContext*>& m_vDemuxerCodecCtxs;
     AVCodecContext* m_pEncCodecCtx;
     const char* m_pFn;
     int m_nErrCode;
     std::string m_szErrMsg;
 
-    void openInput();
-    void initFilter();
-    void filterEncodeWriteFrame();
-    void encodeWriteFrame();
+    void openOutput();
+    int initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
+                   AVCodecContext* _pEncCtx, const char* pFilterSpec);
+    int filterEncodeWriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
+    int encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nStreamIndex,
+                         const int _nFlush);
 
    public:
     Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
           const char* _pFn, AVDictionary* _pOpts);
     ~Muxer();
-    void InitFilters();
-    void WriteBuffer(const FrameBuffer& _demuxerBuf);
-    void Flush();
+    int InitFilters(const char* _pVideoFilterSpec = NULL, const char* _pAudioFilterSpec = NULL);
+    int WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
+    int Flush(const unsigned int _nStreamIndex);
 };
