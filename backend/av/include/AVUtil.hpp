@@ -16,7 +16,7 @@ class FrameBuffer {
     FrameBuffer() : m_nBufPtr{0}, m_vFrames{av_frame_alloc()} {}
 
     AVFrame* operator[](unsigned int _nIndex) {
-        AVFrame* pFrame = nullptr;
+        AVFrame* pFrame = nullptrptr;
         if (_nIndex < m_vFrames.size()) pFrame = m_vFrames[_nIndex];
         return pFrame;
     }

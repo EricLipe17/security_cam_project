@@ -7,16 +7,16 @@ void Muxer::openOutput() {
     const AVCodec* pEncoder;
     unsigned int nIndex;
 
-    avformat_alloc_output_context2(&m_pOutFmtCtx, NULL, NULL, m_pFn);
+    avformat_alloc_output_context2(&m_pOutFmtCtx, nullptr, nullptr, m_pFn);
     if (!m_pOutFmtCtx) {
-        av_log(NULL, AV_LOG_ERROR, "Could not create output context\n");
+        av_log(nullptr, AV_LOG_ERROR, "Could not create output context\n");
         // return AVERROR_UNKNOWN;
     }
 
     for (nIndex = 0; nIndex < m_pDemuxerFmtCtx->nb_streams; nIndex++) {
-        pOutStream = avformat_new_stream(m_pOutFmtCtx, NULL);
+        pOutStream = avformat_new_stream(m_pOutFmtCtx, nullptr);
         if (!pOutStream) {
-            av_log(NULL, AV_LOG_ERROR, "Failed allocating output stream\n");
+            av_log(nullptr, AV_LOG_ERROR, "Failed allocating output stream\n");
             // return AVERROR_UNKNOWN;
         }
 
@@ -25,7 +25,7 @@ void Muxer::openOutput() {
         if (pDecCtx->codec_type == AVMEDIA_TYPE_VIDEO ||
             pDecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
             /* in this example, we choose transcoding to same codec */
-            pEncoder = NULL;
+            pEncoder = nullptr;
             // Using different codecs makes this really slow, but it does works.
             if (pDecCtx->codec_type == AVMEDIA_TYPE_VIDEO) {
                 pEncoder = avcodec_find_encoder(pDecCtx->codec_id);
@@ -36,12 +36,12 @@ void Muxer::openOutput() {
             }
 
             if (!pEncoder) {
-                av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
+                av_log(nullptr, AV_LOG_FATAL, "Necessary encoder not found\n");
                 // return AVERROR_INVALIDDATA;
             }
             pEncCtx = avcodec_alloc_context3(pEncoder);
             if (!pEncCtx) {
-                av_log(NULL, AV_LOG_FATAL, "Failed to allocate the encoder context\n");
+                av_log(nullptr, AV_LOG_FATAL, "Failed to allocate the encoder context\n");
                 // return AVERROR(ENOMEM);
             }
 
@@ -79,14 +79,14 @@ void Muxer::openOutput() {
                 pEncCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
             /* Third parameter can be used to pass settings to encoder */
-            m_nErrCode = avcodec_open2(pEncCtx, pEncoder, NULL);
+            m_nErrCode = avcodec_open2(pEncCtx, pEncoder, nullptr);
             if (m_nErrCode < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", nIndex);
+                av_log(nullptr, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", nIndex);
                 // return ret;
             }
             m_nErrCode = avcodec_parameters_from_context(pOutStream->codecpar, pEncCtx);
             if (m_nErrCode < 0) {
-                av_log(NULL, AV_LOG_ERROR,
+                av_log(nullptr, AV_LOG_ERROR,
                        "Failed to copy encoder parameters to output stream #%u\n", nIndex);
                 // return ret;
             }
@@ -94,15 +94,15 @@ void Muxer::openOutput() {
             pOutStream->time_base = pEncCtx->time_base;
             m_vCodecCtxs.push_back(pEncCtx);
         } else if (pDecCtx->codec_type == AVMEDIA_TYPE_UNKNOWN) {
-            av_log(NULL, AV_LOG_FATAL, "Elementary stream #%d is of unknown type, cannot proceed\n",
-                   nIndex);
+            av_log(nullptr, AV_LOG_FATAL,
+                   "Elementary stream #%d is of unknown type, cannot proceed\n", nIndex);
             // return AVERROR_INVALIDDATA;
         } else {
             /* if this stream must be remuxed */
             pInStream = m_pDemuxerFmtCtx->streams[nIndex];
             m_nErrCode = avcodec_parameters_copy(pOutStream->codecpar, pInStream->codecpar);
             if (m_nErrCode < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Copying parameters for stream #%u failed\n", nIndex);
+                av_log(nullptr, AV_LOG_ERROR, "Copying parameters for stream #%u failed\n", nIndex);
                 // return ret;
             }
             pOutStream->time_base = pInStream->time_base;
@@ -113,13 +113,13 @@ void Muxer::openOutput() {
     if (!(m_pOutFmtCtx->oformat->flags & AVFMT_NOFILE)) {
         m_nErrCode = avio_open(&m_pOutFmtCtx->pb, m_pFn, AVIO_FLAG_WRITE);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Could not open output file '%s'", m_pFn);
+            av_log(nullptr, AV_LOG_ERROR, "Could not open output file '%s'", m_pFn);
             // return ret;
         }
     }
 
     /* init muxer, write output file header */
-    AVDictionary* pOpts = NULL;
+    AVDictionary* pOpts = nullptr;
 
     // Minimal HLS params to segment a file via HLS
     av_dict_set(&pOpts, "hls_time", "10", 0);
@@ -127,7 +127,7 @@ void Muxer::openOutput() {
     av_dict_set(&pOpts, "hls_list_size", "0", 0);
     m_nErrCode = avformat_write_header(m_pOutFmtCtx, &pOpts);
     if (m_nErrCode < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file\n");
+        av_log(nullptr, AV_LOG_ERROR, "Error occurred when opening output file\n");
         // return ret;
     }
 
@@ -137,10 +137,10 @@ void Muxer::openOutput() {
 int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
                       AVCodecContext* _pEncCtx, const char* pFilterSpec) {
     char args[512];
-    const AVFilter* pBufferSrc = NULL;
-    const AVFilter* pBufferSink = NULL;
-    AVFilterContext* m_pBufferSrcCtx = NULL;
-    AVFilterContext* m_pBufferSinkCtx = NULL;
+    const AVFilter* pBufferSrc = nullptr;
+    const AVFilter* pBufferSink = nullptr;
+    AVFilterContext* m_pBufferSrcCtx = nullptr;
+    AVFilterContext* m_pBufferSinkCtx = nullptr;
     AVFilterInOut* pOutputs = avfilter_inout_alloc();
     AVFilterInOut* pInputs = avfilter_inout_alloc();
     AVFilterGraph* m_pFilterGraph = avfilter_graph_alloc();
@@ -154,7 +154,7 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
         pBufferSrc = avfilter_get_by_name("buffer");
         pBufferSink = avfilter_get_by_name("buffersink");
         if (!pBufferSrc || !pBufferSink) {
-            av_log(NULL, AV_LOG_ERROR, "filtering source or sink element not found\n");
+            av_log(nullptr, AV_LOG_ERROR, "filtering source or sink element not found\n");
             m_nErrCode = AVERROR_UNKNOWN;
             return m_nErrCode;
         }
@@ -165,24 +165,24 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
                  _pDecCtx->time_base.den, _pDecCtx->sample_aspect_ratio.num,
                  _pDecCtx->sample_aspect_ratio.den);
 
-        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSrcCtx, pBufferSrc, "in", args, NULL,
+        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSrcCtx, pBufferSrc, "in", args, nullptr,
                                                   m_pFilterGraph);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot create buffer source\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot create buffer source\n");
             return m_nErrCode;
         }
 
-        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSinkCtx, pBufferSink, "out", NULL, NULL,
-                                                  m_pFilterGraph);
+        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSinkCtx, pBufferSink, "out", nullptr,
+                                                  nullptr, m_pFilterGraph);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot create buffer sink\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot create buffer sink\n");
             return m_nErrCode;
         }
 
         m_nErrCode = av_opt_set_bin(m_pBufferSinkCtx, "pix_fmts", (uint8_t*)&_pEncCtx->pix_fmt,
                                     sizeof(_pEncCtx->pix_fmt), AV_OPT_SEARCH_CHILDREN);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot set output pixel format\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot set output pixel format\n");
             return m_nErrCode;
         }
     } else if (_pDecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -190,7 +190,7 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
         pBufferSrc = avfilter_get_by_name("abuffer");
         pBufferSink = avfilter_get_by_name("abuffersink");
         if (!pBufferSrc || !pBufferSink) {
-            av_log(NULL, AV_LOG_ERROR, "filtering source or sink element not found\n");
+            av_log(nullptr, AV_LOG_ERROR, "filtering source or sink element not found\n");
             m_nErrCode = AVERROR_UNKNOWN;
             return m_nErrCode;
         }
@@ -202,17 +202,17 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
                  "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=%s",
                  _pDecCtx->time_base.num, _pDecCtx->time_base.den, _pDecCtx->sample_rate,
                  av_get_sample_fmt_name(_pDecCtx->sample_fmt), buf);
-        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSrcCtx, pBufferSrc, "in", args, NULL,
+        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSrcCtx, pBufferSrc, "in", args, nullptr,
                                                   m_pFilterGraph);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer source\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot create audio buffer source\n");
             return m_nErrCode;
         }
 
-        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSinkCtx, pBufferSink, "out", NULL, NULL,
-                                                  m_pFilterGraph);
+        m_nErrCode = avfilter_graph_create_filter(&m_pBufferSinkCtx, pBufferSink, "out", nullptr,
+                                                  nullptr, m_pFilterGraph);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
             return m_nErrCode;
         }
 
@@ -220,14 +220,14 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
             av_opt_set_bin(m_pBufferSinkCtx, "sample_fmts", (uint8_t*)&_pEncCtx->sample_fmt,
                            sizeof(_pEncCtx->sample_fmt), AV_OPT_SEARCH_CHILDREN);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot set output sample format\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot set output sample format\n");
             return m_nErrCode;
         }
 
         av_channel_layout_describe(&_pEncCtx->ch_layout, buf, sizeof(buf));
         m_nErrCode = av_opt_set(m_pBufferSinkCtx, "ch_layouts", buf, AV_OPT_SEARCH_CHILDREN);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot set output channel layout\n");
             return m_nErrCode;
         }
 
@@ -235,7 +235,7 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
             av_opt_set_bin(m_pBufferSinkCtx, "sample_rates", (uint8_t*)&_pEncCtx->sample_rate,
                            sizeof(_pEncCtx->sample_rate), AV_OPT_SEARCH_CHILDREN);
         if (m_nErrCode < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot set output sample rate\n");
+            av_log(nullptr, AV_LOG_ERROR, "Cannot set output sample rate\n");
             return m_nErrCode;
         }
     } else {
@@ -247,23 +247,23 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
     pOutputs->name = av_strdup("in");
     pOutputs->filter_ctx = m_pBufferSrcCtx;
     pOutputs->pad_idx = 0;
-    pOutputs->next = NULL;
+    pOutputs->next = nullptr;
 
     pInputs->name = av_strdup("out");
     pInputs->filter_ctx = m_pBufferSinkCtx;
     pInputs->pad_idx = 0;
-    pInputs->next = NULL;
+    pInputs->next = nullptr;
 
     if (!pOutputs->name || !pInputs->name) {
         m_nErrCode = AVERROR(ENOMEM);
         return m_nErrCode;
     }
 
-    if ((m_nErrCode =
-             avfilter_graph_parse_ptr(m_pFilterGraph, pFilterSpec, &pInputs, &pOutputs, NULL)) < 0)
+    if ((m_nErrCode = avfilter_graph_parse_ptr(m_pFilterGraph, pFilterSpec, &pInputs, &pOutputs,
+                                               nullptr)) < 0)
         return m_nErrCode;
 
-    if ((m_nErrCode = avfilter_graph_config(m_pFilterGraph, NULL)) < 0) return m_nErrCode;
+    if ((m_nErrCode = avfilter_graph_config(m_pFilterGraph, nullptr)) < 0) return m_nErrCode;
 
     /* Fill FilteringContext */
     _pFilterCtx->m_pBufferSrcCtx = m_pBufferSrcCtx;
@@ -279,17 +279,17 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
 int Muxer::filterEncodeWriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex) {
     FilteringContext filterCtx = m_vFilterCtxs.at(_nStreamIndex);
 
-    av_log(NULL, AV_LOG_INFO, "Pushing decoded frame to filters\n");
+    av_log(nullptr, AV_LOG_INFO, "Pushing decoded frame to filters\n");
     /* push the decoded frame into the filtergraph */
     m_nErrCode = av_buffersrc_add_frame_flags(filterCtx.m_pBufferSrcCtx, _pFrame, 0);
     if (m_nErrCode < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
+        av_log(nullptr, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
         return m_nErrCode;
     }
 
     /* pull filtered frames from the filtergraph */
     while (1) {
-        av_log(NULL, AV_LOG_INFO, "Pulling filtered frame from filters\n");
+        av_log(nullptr, AV_LOG_INFO, "Pulling filtered frame from filters\n");
         m_nErrCode = av_buffersink_get_frame(filterCtx.m_pBufferSinkCtx, filterCtx.m_pFrame);
         if (m_nErrCode < 0) {
             /* if no more frames for output - returns AVERROR(EAGAIN)
@@ -311,11 +311,11 @@ int Muxer::filterEncodeWriteFrame(AVFrame* _pFrame, const unsigned int _nStreamI
 
 int Muxer::encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nStreamIndex,
                             const int _nFlush) {
-    AVFrame* pFilteredFrame = _nFlush ? NULL : _filterCtx.m_pFrame;
+    AVFrame* pFilteredFrame = _nFlush ? nullptr : _filterCtx.m_pFrame;
     AVPacket* pPacket = _filterCtx.m_pPacket;
     AVCodecContext* pEncCtx = m_vCodecCtxs.at(_nStreamIndex);
 
-    av_log(NULL, AV_LOG_INFO, "Encoding frame\n");
+    av_log(nullptr, AV_LOG_INFO, "Encoding frame\n");
     /* encode filtered frame */
     av_packet_unref(pPacket);
 
@@ -333,7 +333,7 @@ int Muxer::encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nSt
         av_packet_rescale_ts(pPacket, pEncCtx->time_base,
                              m_pOutFmtCtx->streams[_nStreamIndex]->time_base);
 
-        av_log(NULL, AV_LOG_DEBUG, "Muxing frame\n");
+        av_log(nullptr, AV_LOG_DEBUG, "Muxing frame\n");
         /* mux encoded frame */
         m_nErrCode = av_interleaved_write_frame(m_pOutFmtCtx, pPacket);
     }
@@ -347,8 +347,8 @@ Muxer::Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vD
       m_vDemuxerCodecCtxs{m_vDemuxerCodecCtxs},
       m_pFn{_pFn},
       m_nErrCode{0},
-      m_pOutFmtCtx{NULL},
-      m_pEncCodecCtx{NULL} {}
+      m_pOutFmtCtx{nullptr},
+      m_pEncCodecCtx{nullptr} {}
 
 // TODO: Free everything!
 Muxer::~Muxer() {}
@@ -358,20 +358,20 @@ int Muxer::InitFilters(const char* _pVideoFilterSpec, const char* _pAudioFilterS
 
     for (unsigned int i = 0; i < m_pDemuxerFmtCtx->nb_streams; i++) {
         FilteringContext filterCtx;
-        filterCtx.m_pBufferSrcCtx = NULL;
-        filterCtx.m_pBufferSinkCtx = NULL;
-        filterCtx.m_pFilterGraph = NULL;
+        filterCtx.m_pBufferSrcCtx = nullptr;
+        filterCtx.m_pBufferSinkCtx = nullptr;
+        filterCtx.m_pFilterGraph = nullptr;
         if (!(m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ||
               m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO))
             continue;
 
         if (m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            pFilterSpec = _pVideoFilterSpec == NULL
-                              ? "null"
+            pFilterSpec = _pVideoFilterSpec == nullptr
+                              ? "nullptr"
                               : _pVideoFilterSpec; /* passthrough (dummy) filter for video */
         else
-            pFilterSpec = _pAudioFilterSpec == NULL
-                              ? "anull"
+            pFilterSpec = _pAudioFilterSpec == nullptr
+                              ? "anullptr"
                               : _pAudioFilterSpec; /* passthrough (dummy) filter for audio */
         m_nErrCode =
             initFilter(&filterCtx, m_vDemuxerCodecCtxs.at(i), m_vCodecCtxs.at(i), pFilterSpec);
@@ -398,7 +398,7 @@ int Muxer::WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex) {
 int Muxer::Flush(const unsigned int _nStreamIndex) {
     if (!(m_vCodecCtxs.at(_nStreamIndex)->codec->capabilities & AV_CODEC_CAP_DELAY)) return 0;
 
-    av_log(NULL, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nStreamIndex);
+    av_log(nullptr, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nStreamIndex);
     FilteringContext filterCtx = m_vFilterCtxs.at(_nStreamIndex);
     return encodeWriteFrame(filterCtx, _nStreamIndex, 1);
 }

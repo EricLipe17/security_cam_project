@@ -44,7 +44,8 @@ class Muxer {
     Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
           const char* _pFn, AVDictionary* _pOpts);
     ~Muxer();
-    int InitFilters(const char* _pVideoFilterSpec = NULL, const char* _pAudioFilterSpec = NULL);
+    int InitFilters(const char* _pVideoFilterSpec = nullptr,
+                    const char* _pAudioFilterSpec = nullptr);
     int WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
     int Flush(const unsigned int _nStreamIndex);
 };
