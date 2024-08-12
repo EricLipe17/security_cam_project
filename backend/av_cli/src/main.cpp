@@ -11,7 +11,7 @@
 // #include <stdlib.h>
 // #include <string.h>
 
-// #include <iostream>
+#include <iostream>
 // #include <memory>
 
 #include "Demuxer.hpp"
@@ -551,10 +551,15 @@ int main(int argc, char** argv) {
     Demuxer demux("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4", nullptr);
     Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "sample_1280x720_surfing_with_audio_new.m3u8",
               nullptr);
-    int nErrCode = 0;
-    while (nErrCode >= 0) {
+    int nErrCode = mux.InitFilters();
+    while (nErrCode >= 0 or nErrCode == AVERROR(EAGAIN)) {
         nErrCode = demux.Frame(mux);
     }
+    for (size_t i = 0; i < demux.m_pFmtCtx->nb_streams; i++) {
+        mux.Flush(i);
+    }
+    mux.CloseStream();
+
     return 0;
 
     // if ((ret = open_input_file("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4")) <

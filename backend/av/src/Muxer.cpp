@@ -344,11 +344,13 @@ int Muxer::encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nSt
 Muxer::Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
              const char* _pFn, AVDictionary* _pOpts)
     : m_pDemuxerFmtCtx{_pDemuxerFmtCtx},
-      m_vDemuxerCodecCtxs{m_vDemuxerCodecCtxs},
+      m_vDemuxerCodecCtxs{_vDemuxerCodecCtxs},
       m_pFn{_pFn},
       m_nErrCode{0},
       m_pOutFmtCtx{nullptr},
-      m_pEncCodecCtx{nullptr} {}
+      m_pEncCodecCtx{nullptr} {
+    openOutput();
+}
 
 // TODO: Free everything!
 Muxer::~Muxer() {}
@@ -367,11 +369,11 @@ int Muxer::InitFilters(const char* _pVideoFilterSpec, const char* _pAudioFilterS
 
         if (m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             pFilterSpec = _pVideoFilterSpec == nullptr
-                              ? "nullptr"
+                              ? "null"
                               : _pVideoFilterSpec; /* passthrough (dummy) filter for video */
         else
             pFilterSpec = _pAudioFilterSpec == nullptr
-                              ? "anullptr"
+                              ? "anull"
                               : _pAudioFilterSpec; /* passthrough (dummy) filter for audio */
         m_nErrCode =
             initFilter(&filterCtx, m_vDemuxerCodecCtxs.at(i), m_vCodecCtxs.at(i), pFilterSpec);
@@ -401,4 +403,9 @@ int Muxer::Flush(const unsigned int _nStreamIndex) {
     av_log(nullptr, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nStreamIndex);
     FilteringContext filterCtx = m_vFilterCtxs.at(_nStreamIndex);
     return encodeWriteFrame(filterCtx, _nStreamIndex, 1);
+}
+
+int Muxer::CloseStream() {
+    m_nErrCode = av_write_trailer(m_pOutFmtCtx);
+    return m_nErrCode;
 }

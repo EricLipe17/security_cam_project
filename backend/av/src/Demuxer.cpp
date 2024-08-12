@@ -1,7 +1,7 @@
 #include "Demuxer.hpp"
 
 Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
-    : m_pFmtCtx{nullptrptr},
+    : m_pFmtCtx{nullptr},
       m_pFn{_pFn},
       m_pOpts{_pOpts},
       m_pFrame{av_frame_alloc()},
@@ -55,7 +55,7 @@ int Demuxer::Frame(Muxer& _muxer) {
         // TODO: the muxer needs to get the frame at this point in time to write it.
         m_nErrCode = _muxer.WriteFrame(m_pFrame, nStreamIndex);
     }
-    return m_nErrCode;
+    return 0;
 }
 
 int Demuxer::openInput() {
