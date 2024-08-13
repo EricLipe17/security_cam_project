@@ -555,9 +555,7 @@ int main(int argc, char** argv) {
     while (nErrCode >= 0 or nErrCode == AVERROR(EAGAIN)) {
         nErrCode = demux.Frame(mux);
     }
-    for (size_t i = 0; i < demux.m_pFmtCtx->nb_streams; i++) {
-        mux.Flush(i);
-    }
+    mux.Flush();
     mux.CloseStream();
 
     return 0;

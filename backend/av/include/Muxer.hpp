@@ -47,6 +47,6 @@ class Muxer {
     int InitFilters(const char* _pVideoFilterSpec = nullptr,
                     const char* _pAudioFilterSpec = nullptr);
     int WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
-    int Flush(const unsigned int _nStreamIndex);
+    int Flush();
     int CloseStream();
 };

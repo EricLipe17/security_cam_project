@@ -397,12 +397,14 @@ int Muxer::WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex) {
     return filterEncodeWriteFrame(_pFrame, _nStreamIndex);
 }
 
-int Muxer::Flush(const unsigned int _nStreamIndex) {
-    if (!(m_vCodecCtxs.at(_nStreamIndex)->codec->capabilities & AV_CODEC_CAP_DELAY)) return 0;
-
-    av_log(nullptr, AV_LOG_INFO, "Flushing stream #%u encoder\n", _nStreamIndex);
-    FilteringContext filterCtx = m_vFilterCtxs.at(_nStreamIndex);
-    return encodeWriteFrame(filterCtx, _nStreamIndex, 1);
+int Muxer::Flush() {
+    for (int i = 0; i < m_vFilterCtxs.size(); i++) {
+        av_log(nullptr, AV_LOG_INFO, "Flushing stream #%u encoder\n", i);
+        FilteringContext filterCtx = m_vFilterCtxs.at(i);
+        m_nErrCode = encodeWriteFrame(filterCtx, i, 1);
+        if (m_nErrCode < 0) return m_nErrCode;
+    }
+    return m_nErrCode;
 }
 
 int Muxer::CloseStream() {
