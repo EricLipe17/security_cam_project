@@ -551,7 +551,7 @@ int main(int argc, char** argv) {
     Demuxer demux("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4", nullptr);
     Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "sample_1280x720_surfing_with_audio_new.m3u8",
               nullptr);
-    int nErrCode = mux.InitFilters();
+    int nErrCode = 0;
     while (nErrCode >= 0 or nErrCode == AVERROR(EAGAIN)) {
         nErrCode = demux.Frame(mux);
     }

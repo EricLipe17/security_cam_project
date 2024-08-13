@@ -342,20 +342,30 @@ int Muxer::encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nSt
 }
 
 Muxer::Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
-             const char* _pFn, AVDictionary* _pOpts)
+             const char* _pFn, AVDictionary* _pOpts, const char* _pVideoFilterSpec,
+             const char* _pAudioFilterSpec)
     : m_pDemuxerFmtCtx{_pDemuxerFmtCtx},
       m_vDemuxerCodecCtxs{_vDemuxerCodecCtxs},
       m_pFn{_pFn},
+      m_pVideoFilterSpec{_pVideoFilterSpec},
+      m_pAudioFilterSpec{_pAudioFilterSpec},
       m_nErrCode{0},
       m_pOutFmtCtx{nullptr},
       m_pEncCodecCtx{nullptr} {
+    if (!m_pVideoFilterSpec) {
+        m_pVideoFilterSpec = "null"; /* passthrough (dummy) filter for video */
+    }
+    if (!m_pAudioFilterSpec) {
+        m_pAudioFilterSpec = "anull"; /* passthrough (dummy) filter for audio */
+    }
     openOutput();
+    initFilters();
 }
 
 // TODO: Free everything!
 Muxer::~Muxer() {}
 
-int Muxer::InitFilters(const char* _pVideoFilterSpec, const char* _pAudioFilterSpec) {
+int Muxer::initFilters() {
     const char* pFilterSpec;
 
     for (unsigned int i = 0; i < m_pDemuxerFmtCtx->nb_streams; i++) {
@@ -368,13 +378,9 @@ int Muxer::InitFilters(const char* _pVideoFilterSpec, const char* _pAudioFilterS
             continue;
 
         if (m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            pFilterSpec = _pVideoFilterSpec == nullptr
-                              ? "null"
-                              : _pVideoFilterSpec; /* passthrough (dummy) filter for video */
+            pFilterSpec = m_pVideoFilterSpec;
         else
-            pFilterSpec = _pAudioFilterSpec == nullptr
-                              ? "anull"
-                              : _pAudioFilterSpec; /* passthrough (dummy) filter for audio */
+            pFilterSpec = m_pAudioFilterSpec;
         m_nErrCode =
             initFilter(&filterCtx, m_vDemuxerCodecCtxs.at(i), m_vCodecCtxs.at(i), pFilterSpec);
         if (m_nErrCode) return m_nErrCode;

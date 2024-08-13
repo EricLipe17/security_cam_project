@@ -30,6 +30,8 @@ class Muxer {
     std::vector<AVCodecContext*>& m_vDemuxerCodecCtxs;
     AVCodecContext* m_pEncCodecCtx;
     const char* m_pFn;
+    const char* m_pVideoFilterSpec;
+    const char* m_pAudioFilterSpec;
     int m_nErrCode;
     std::string m_szErrMsg;
 
@@ -39,13 +41,13 @@ class Muxer {
     int filterEncodeWriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
     int encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nStreamIndex,
                          const int _nFlush);
+    int initFilters();
 
    public:
     Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
-          const char* _pFn, AVDictionary* _pOpts);
+          const char* _pFn, AVDictionary* _pOpts, const char* _pVideoFilterSpec = nullptr,
+          const char* _pAudioFilterSpec = nullptr);
     ~Muxer();
-    int InitFilters(const char* _pVideoFilterSpec = nullptr,
-                    const char* _pAudioFilterSpec = nullptr);
     int WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
     int Flush();
     int CloseStream();
