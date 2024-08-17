@@ -14,6 +14,7 @@
 #include <iostream>
 // #include <memory>
 
+#include "AVUtil.hpp"
 #include "Demuxer.hpp"
 #include "Muxer.hpp"
 
@@ -552,8 +553,8 @@ int main(int argc, char** argv) {
     Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "sample_1280x720_surfing_with_audio_new.m3u8",
               nullptr);
     int nErrCode = 0;
-    while (nErrCode >= 0 or nErrCode == AVERROR(EAGAIN)) {
-        nErrCode = demux.Frame(mux);
+    for (auto& pair : demux.Frame()) {
+        mux.WriteFrame(pair.second, pair.first);
     }
     mux.Flush();
     mux.CloseStream();

@@ -1,12 +1,15 @@
 #include "Demuxer.hpp"
 
+#include <boost/bind/bind.hpp>
+
 Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
     : m_pFmtCtx{nullptr},
       m_pFn{_pFn},
       m_pOpts{_pOpts},
       m_pFrame{av_frame_alloc()},
       m_pPacket{av_packet_alloc()},
-      m_nErrCode{0} {
+      m_nErrCode{0},
+      m_frames{boost::bind(&Demuxer::frame, this, std::placeholders::_1)} {
     openInput();
 }
 
@@ -20,42 +23,43 @@ Demuxer::~Demuxer() {
     avformat_close_input(&m_pFmtCtx);
 }
 
-int Demuxer::Frame(Muxer& _muxer) {
-    av_packet_unref(m_pPacket);
-    m_nErrCode = av_read_frame(m_pFmtCtx, m_pPacket);
-    if (m_nErrCode < 0) return m_nErrCode;
-
-    unsigned int nStreamIndex = m_pPacket->stream_index;
-    av_log(nullptr, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
-
-    AVCodecContext* pDecCtx = m_vCodecCtxs.at(nStreamIndex);
-
-    av_packet_rescale_ts(m_pPacket, m_pFmtCtx->streams[nStreamIndex]->time_base,
-                         pDecCtx->time_base);
-    m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
-    if (m_nErrCode < 0) {
-        av_log(nullptr, AV_LOG_ERROR, "Decoding failed\n");
-        return m_nErrCode;
-    }
-
-    unsigned int nIndex = 0;
-    // std::size_t nSize = m_buffer.Size();
+void Demuxer::frame(FrameGen::push_type& yield) {
     while (m_nErrCode >= 0) {
-        // AVFrame* pFrame = m_buffer.GetNextFreeFrame();
+        av_packet_unref(m_pPacket);
+        m_nErrCode = av_read_frame(m_pFmtCtx, m_pPacket);
+        if (m_nErrCode < 0) break;
 
-        m_nErrCode = avcodec_receive_frame(pDecCtx, m_pFrame);
-        if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
-            return m_nErrCode;
-        else if (m_nErrCode < 0)
-            exit(1);
+        unsigned int nStreamIndex = m_pPacket->stream_index;
+        av_log(nullptr, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
 
-        m_pFrame->pts = m_pFrame->best_effort_timestamp;
-        // m_buffer.IncrementPtr();
-        // m_buffer.AllocFrame();
-        // TODO: the muxer needs to get the frame at this point in time to write it.
-        m_nErrCode = _muxer.WriteFrame(m_pFrame, nStreamIndex);
+        AVCodecContext* pDecCtx = m_vCodecCtxs.at(nStreamIndex);
+
+        av_packet_rescale_ts(m_pPacket, m_pFmtCtx->streams[nStreamIndex]->time_base,
+                             pDecCtx->time_base);
+        m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
+        if (m_nErrCode < 0) {
+            av_log(nullptr, AV_LOG_ERROR, "Decoding failed\n");
+            break;
+        }
+
+        unsigned int nIndex = 0;
+        // std::size_t nSize = m_buffer.Size();
+        while (m_nErrCode >= 0) {
+            // AVFrame* pFrame = m_buffer.GetNextFreeFrame();
+
+            m_nErrCode = avcodec_receive_frame(pDecCtx, m_pFrame);
+            if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
+                continue;
+            else if (m_nErrCode < 0)
+                exit(1);
+
+            m_pFrame->pts = m_pFrame->best_effort_timestamp;
+            // m_buffer.IncrementPtr();
+            // m_buffer.AllocFrame();
+            // TODO: the muxer needs to get the frame at this point in time to write it.
+            yield(std::make_pair(nStreamIndex, m_pFrame));
+        }
     }
-    return 0;
 }
 
 int Demuxer::openInput() {

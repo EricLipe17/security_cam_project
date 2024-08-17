@@ -6,6 +6,9 @@
 extern "C" {
 #include <libavformat/avformat.h>
 }
+#include <boost/coroutine2/all.hpp>
+
+typedef boost::coroutines2::coroutine<std::pair<int, AVFrame*>> FrameGen;
 
 class Demuxer {
    public:
@@ -19,10 +22,13 @@ class Demuxer {
     int m_nErrCode;
     std::string m_szErrMsg;
 
+    FrameGen::pull_type m_frames;
+
     int openInput();
+    void frame(FrameGen::push_type& yield);
 
    public:
     Demuxer(const char* _pFn, AVDictionary* _pOpts);
     ~Demuxer();
-    int Frame(Muxer& _muxer);
+    inline FrameGen::pull_type& Frame() { return m_frames; };
 };

@@ -3,7 +3,8 @@ project(av VERSION 0.0.1 LANGUAGES C CXX)
 
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
+
 
 # TODO: Figure out why Clion is not passing in the appropriate environment variable for cmake to use
 #set(ENV{PKG_CONFIG_PATH} $ENV{FFMPEG_HOME}/build/lib/pkgconfig)
@@ -34,6 +35,7 @@ add_library(${PROJECT_NAME} STATIC
 
 target_include_directories(${PROJECT_NAME}  PRIVATE
         ./include
+        /home/eric/projects/security_cam_project/backend/third-party/boost_1_86_0
 )
 
 target_link_libraries(${PROJECT_NAME}

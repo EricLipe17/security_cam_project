@@ -46,7 +46,8 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "iostream": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "*.ipp": "cpp"
     },
     "files.trimTrailingWhitespace": true,
     "editor.rulers": [
