@@ -17,3 +17,5 @@ __pycache__
 .deps/
 bin/
 lib/
+b2
+project-config.jam

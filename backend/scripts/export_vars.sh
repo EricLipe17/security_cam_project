@@ -7,10 +7,8 @@ export THIRD_PARTY=$PROJ_BACKEND/third-party
 # Boost
 export BOOST_HOME="$THIRD_PARTY/boost_1_86_0"
 export BOOST_BUILD="$BOOST_HOME/build"
-export BOOST_INSTALL="$BOOST_BUILD/install"
-export BOOST_LIB="$BOOST_BUILD/lib"
-export BOOST_INCLUDE="$BOOST_BUILD/include"
-export PATH="$BOOST_BIN:$PATH"
+export BOOST_LIB="$BOOST_HOME/stage/lib"
+export BOOST_INCLUDE="$BOOST_HOME"
 
 # FFMPEG
 export FFMPEG_HOME="$THIRD_PARTY/ffmpeg"
@@ -28,5 +26,5 @@ export NVENC_HOME="$THIRD_PARTY/nvenc"
 export PKG_CONFIG_PATH="$FFMPEG_BUILD/lib/pkgconfig"
 
 # Library Path
-export LD_LIBRARY_PATH="$FFMPEG_BUILD/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$BOOST_HOME/stage/lib:$FFMPEG_BUILD/lib:$LD_LIBRARY_PATH"
 
