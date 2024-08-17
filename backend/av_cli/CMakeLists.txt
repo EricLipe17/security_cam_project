@@ -13,9 +13,8 @@ add_executable(${PROJECT_NAME}
         )
 
 target_include_directories(${PROJECT_NAME}  PRIVATE
-        ./include
-        /home/eric/projects/security_cam_project/backend/third-party/boost_1_86_0
-        ../av/include
+        $ENV{PROJ_BACKEND}/av/include
+        $ENV{BOOST_HOME}
         )
 
 target_link_libraries(${PROJECT_NAME}

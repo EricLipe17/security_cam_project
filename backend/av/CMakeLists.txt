@@ -35,9 +35,10 @@ add_library(${PROJECT_NAME} STATIC
 
 target_include_directories(${PROJECT_NAME}  PRIVATE
         ./include
-        /home/eric/projects/security_cam_project/backend/third-party/boost_1_86_0
+        $ENV{BOOST_HOME}
 )
 
 target_link_libraries(${PROJECT_NAME}
         PkgConfig::ffmpeg
+        $ENV{BOOST_LIB}/libboost_context.a
 )
