@@ -24,11 +24,13 @@ struct FilteringContext {
 class Muxer {
    private:
     std::vector<FilteringContext> m_vFilterCtxs;
-    AVFormatContext* m_pOutFmtCtx;
+    AVFormatContext* m_pFmtCtx;
     std::vector<AVCodecContext*> m_vCodecCtxs;
+
+    // TODO: Get rid of demuxer members;
     AVFormatContext* m_pDemuxerFmtCtx;
     std::vector<AVCodecContext*>& m_vDemuxerCodecCtxs;
-    AVCodecContext* m_pEncCodecCtx;
+
     const char* m_pFn;
     const char* m_pVideoFilterSpec;
     const char* m_pAudioFilterSpec;
