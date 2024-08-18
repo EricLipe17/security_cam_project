@@ -554,6 +554,9 @@ int main(int argc, char** argv) {
               nullptr);
     int nErrCode = 0;
     for (auto& pair : demux.Frame()) {
+        if (pair.first == Frame::INIT) continue;
+        if (pair.first == Frame::END) break;
+        if (pair.first == Frame::ERROR) exit(1);
         mux.WriteFrame(pair.second, pair.first);
     }
     mux.Flush();

@@ -24,10 +24,12 @@ Demuxer::~Demuxer() {
 }
 
 void Demuxer::frame(FrameGen::push_type& yield) {
+    yield(std::make_pair(Frame::INIT, nullptr));
+
     while (m_nErrCode >= 0) {
         av_packet_unref(m_pPacket);
         m_nErrCode = av_read_frame(m_pFmtCtx, m_pPacket);
-        if (m_nErrCode < 0) break;
+        if (m_nErrCode < 0) yield(std::make_pair(Frame::END, nullptr));
 
         unsigned int nStreamIndex = m_pPacket->stream_index;
         av_log(nullptr, AV_LOG_DEBUG, "Demuxer gave frame of stream_index %u\n", nStreamIndex);
@@ -39,19 +41,20 @@ void Demuxer::frame(FrameGen::push_type& yield) {
         m_nErrCode = avcodec_send_packet(pDecCtx, m_pPacket);
         if (m_nErrCode < 0) {
             av_log(nullptr, AV_LOG_ERROR, "Decoding failed\n");
-            break;
+            yield(std::make_pair(Frame::ERROR, nullptr));
         }
 
-        unsigned int nIndex = 0;
         // std::size_t nSize = m_buffer.Size();
         while (m_nErrCode >= 0) {
             // AVFrame* pFrame = m_buffer.GetNextFreeFrame();
 
             m_nErrCode = avcodec_receive_frame(pDecCtx, m_pFrame);
-            if (m_nErrCode == AVERROR_EOF || m_nErrCode == AVERROR(EAGAIN))
-                continue;
-            else if (m_nErrCode < 0)
-                exit(1);
+            if (m_nErrCode == AVERROR_EOF) yield(std::make_pair(Frame::END, nullptr));
+            if (m_nErrCode == AVERROR(EAGAIN)) {
+                m_nErrCode = 0;
+                break;
+            } else if (m_nErrCode < 0)
+                yield(std::make_pair(Frame::ERROR, nullptr));
 
             m_pFrame->pts = m_pFrame->best_effort_timestamp;
             // m_buffer.IncrementPtr();

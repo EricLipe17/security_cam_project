@@ -10,6 +10,8 @@ extern "C" {
 
 typedef boost::coroutines2::coroutine<std::pair<int, AVFrame*>> FrameGen;
 
+enum Frame { INIT = -3, END = -2, ERROR = -1 };
+
 class Demuxer {
    public:
     AVFormatContext* m_pFmtCtx;
