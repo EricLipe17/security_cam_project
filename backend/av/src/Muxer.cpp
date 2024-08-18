@@ -7,7 +7,7 @@ void Muxer::openOutput() {
     const AVCodec* pEncoder;
     unsigned int nIndex;
 
-    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, nullptr, m_pFn);
+    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, nullptr, m_szFn.c_str());
     if (!m_pFmtCtx) {
         av_log(nullptr, AV_LOG_ERROR, "Could not create output context\n");
         // return AVERROR_UNKNOWN;
@@ -108,12 +108,12 @@ void Muxer::openOutput() {
             pOutStream->time_base = pInStream->time_base;
         }
     }
-    av_dump_format(m_pFmtCtx, 0, m_pFn, 1);
+    av_dump_format(m_pFmtCtx, 0, m_szFn.c_str(), 1);
 
     if (!(m_pFmtCtx->oformat->flags & AVFMT_NOFILE)) {
-        m_nErrCode = avio_open(&m_pFmtCtx->pb, m_pFn, AVIO_FLAG_WRITE);
+        m_nErrCode = avio_open(&m_pFmtCtx->pb, m_szFn.c_str(), AVIO_FLAG_WRITE);
         if (m_nErrCode < 0) {
-            av_log(nullptr, AV_LOG_ERROR, "Could not open output file '%s'", m_pFn);
+            av_log(nullptr, AV_LOG_ERROR, "Could not open output file '%s'", m_szFn.c_str());
             // return ret;
         }
     }
@@ -135,7 +135,7 @@ void Muxer::openOutput() {
 }
 
 int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
-                      AVCodecContext* _pEncCtx, const char* pFilterSpec) {
+                      AVCodecContext* _pEncCtx, const std::string& _szFilterSpec) {
     char args[512];
     const AVFilter* pBufferSrc = nullptr;
     const AVFilter* pBufferSink = nullptr;
@@ -259,8 +259,8 @@ int Muxer::initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
         return m_nErrCode;
     }
 
-    if ((m_nErrCode = avfilter_graph_parse_ptr(m_pFilterGraph, pFilterSpec, &pInputs, &pOutputs,
-                                               nullptr)) < 0)
+    if ((m_nErrCode = avfilter_graph_parse_ptr(m_pFilterGraph, _szFilterSpec.c_str(), &pInputs,
+                                               &pOutputs, nullptr)) < 0)
         return m_nErrCode;
 
     if ((m_nErrCode = avfilter_graph_config(m_pFilterGraph, nullptr)) < 0) return m_nErrCode;
@@ -342,27 +342,35 @@ int Muxer::encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nSt
 }
 
 Muxer::Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
-             const char* _pFn, AVDictionary* _pOpts, const char* _pVideoFilterSpec,
-             const char* _pAudioFilterSpec)
+             const std::string& _szFn, AVDictionary* _pOpts, const std::string& _szVideoFilterSpec,
+             const std::string& _szAudioFilterSpec)
     : m_pDemuxerFmtCtx{_pDemuxerFmtCtx},
       m_vDemuxerCodecCtxs{_vDemuxerCodecCtxs},
-      m_pFn{_pFn},
-      m_pVideoFilterSpec{_pVideoFilterSpec},
-      m_pAudioFilterSpec{_pAudioFilterSpec},
+      m_szFn{_szFn},
+      m_szVideoFilterSpec{_szVideoFilterSpec},
+      m_szAudioFilterSpec{_szAudioFilterSpec},
       m_nErrCode{0},
       m_pFmtCtx{nullptr} {
-    if (!m_pVideoFilterSpec) {
-        m_pVideoFilterSpec = "null"; /* passthrough (dummy) filter for video */
-    }
-    if (!m_pAudioFilterSpec) {
-        m_pAudioFilterSpec = "anull"; /* passthrough (dummy) filter for audio */
-    }
     openOutput();
     initFilters();
 }
 
+Muxer::Muxer(Muxer&& _muxer)
+    : m_pFmtCtx{_muxer.m_pFmtCtx},
+      m_vFilterCtxs{std::move(_muxer.m_vFilterCtxs)},
+      m_vCodecCtxs{std::move(_muxer.m_vCodecCtxs)},
+      m_pDemuxerFmtCtx{_muxer.m_pDemuxerFmtCtx},
+      m_vDemuxerCodecCtxs{_muxer.m_vDemuxerCodecCtxs},
+      m_szFn{std::move(_muxer.m_szFn)},
+      m_szVideoFilterSpec{std::move(_muxer.m_szVideoFilterSpec)},
+      m_szAudioFilterSpec{std::move(_muxer.m_szAudioFilterSpec)},
+      m_nErrCode{_muxer.m_nErrCode},
+      m_szErrMsg{std::move(_muxer.m_szErrMsg)} {
+    _muxer.m_pFmtCtx = nullptr;
+}
+
 Muxer::~Muxer() {
-    for (int i = 0; i < m_vCodecCtxs.size(); i +) {
+    for (int i = 0; i < m_vCodecCtxs.size(); i++) {
         avcodec_free_context(&m_vCodecCtxs.at(i));
         FilteringContext filterCtx = m_vFilterCtxs.at(i);
         if (filterCtx.m_pFilterGraph) {
@@ -376,7 +384,7 @@ Muxer::~Muxer() {
 }
 
 int Muxer::initFilters() {
-    const char* pFilterSpec;
+    std::string szFilterSpec;
 
     for (unsigned int i = 0; i < m_pDemuxerFmtCtx->nb_streams; i++) {
         FilteringContext filterCtx;
@@ -388,11 +396,11 @@ int Muxer::initFilters() {
             continue;
 
         if (m_pDemuxerFmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            pFilterSpec = m_pVideoFilterSpec;
+            szFilterSpec = m_szVideoFilterSpec;
         else
-            pFilterSpec = m_pAudioFilterSpec;
+            szFilterSpec = m_szAudioFilterSpec;
         m_nErrCode =
-            initFilter(&filterCtx, m_vDemuxerCodecCtxs.at(i), m_vCodecCtxs.at(i), pFilterSpec);
+            initFilter(&filterCtx, m_vDemuxerCodecCtxs.at(i), m_vCodecCtxs.at(i), szFilterSpec);
         if (m_nErrCode) return m_nErrCode;
 
         filterCtx.m_pPacket = av_packet_alloc();

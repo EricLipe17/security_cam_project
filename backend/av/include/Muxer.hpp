@@ -31,15 +31,15 @@ class Muxer {
     AVFormatContext* m_pDemuxerFmtCtx;
     std::vector<AVCodecContext*>& m_vDemuxerCodecCtxs;
 
-    const char* m_pFn;
-    const char* m_pVideoFilterSpec;
-    const char* m_pAudioFilterSpec;
+    const std::string m_szFn;
+    const std::string m_szVideoFilterSpec;
+    const std::string m_szAudioFilterSpec;
     int m_nErrCode;
     std::string m_szErrMsg;
 
     void openOutput();
     int initFilter(FilteringContext* _pFilterCtx, AVCodecContext* _pDecCtx,
-                   AVCodecContext* _pEncCtx, const char* pFilterSpec);
+                   AVCodecContext* _pEncCtx, const std::string& _szFilterSpec);
     int filterEncodeWriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
     int encodeWriteFrame(FilteringContext _filterCtx, const unsigned int _nStreamIndex,
                          const int _nFlush);
@@ -47,9 +47,15 @@ class Muxer {
 
    public:
     Muxer(AVFormatContext* _pDemuxerFmtCtx, std::vector<AVCodecContext*>& _vDemuxerCodecCtxs,
-          const char* _pFn, AVDictionary* _pOpts, const char* _pVideoFilterSpec = nullptr,
-          const char* _pAudioFilterSpec = nullptr);
+          const std::string& _szFn, AVDictionary* _pOpts,
+          const std::string& _szVideoFilterSpec = "null",
+          const std::string& _szAudioFilterSpec = "anull");
+    Muxer(Muxer&& _muxer);
+    Muxer& operator=(Muxer&&) = delete;
+    Muxer(Muxer&) = delete;
+    Muxer& operator=(const Muxer&) = delete;
     ~Muxer();
+
     int WriteFrame(AVFrame* _pFrame, const unsigned int _nStreamIndex);
     int Flush();
     int CloseStream();

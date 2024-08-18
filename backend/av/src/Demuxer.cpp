@@ -2,15 +2,29 @@
 
 #include <boost/bind/bind.hpp>
 
-Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
+Demuxer::Demuxer(const std::string& _szFn, AVDictionary* _pOpts)
     : m_pFmtCtx{nullptr},
-      m_pFn{_pFn},
+      m_szFn{_szFn},
       m_pOpts{_pOpts},
       m_pFrame{av_frame_alloc()},
       m_pPacket{av_packet_alloc()},
       m_nErrCode{0},
       m_frames{boost::bind(&Demuxer::frame, this, std::placeholders::_1)} {
     openInput();
+}
+
+Demuxer::Demuxer(Demuxer&& _demuxer)
+    : m_pFmtCtx{_demuxer.m_pFmtCtx},
+      m_vCodecCtxs{std::move(_demuxer.m_vCodecCtxs)},
+      m_pFrame{_demuxer.m_pFrame},
+      m_pPacket{_demuxer.m_pPacket},
+      m_pOpts{_demuxer.m_pOpts},
+      m_szFn{_demuxer.m_szFn},
+      m_szErrMsg{_demuxer.m_szErrMsg},
+      m_frames{std::move(_demuxer.m_frames)} {
+    _demuxer.m_pFrame = nullptr;
+    _demuxer.m_pPacket = nullptr;
+    _demuxer.m_pOpts = nullptr;
 }
 
 Demuxer::~Demuxer() {
@@ -63,7 +77,7 @@ void Demuxer::frame(FrameGen::push_type& yield) {
 int Demuxer::openInput() {
     unsigned int nStreamIndex;
 
-    m_nErrCode = avformat_open_input(&m_pFmtCtx, m_pFn, nullptr, nullptr);
+    m_nErrCode = avformat_open_input(&m_pFmtCtx, m_szFn.c_str(), nullptr, nullptr);
     if (m_nErrCode < 0) {
         av_log(nullptr, AV_LOG_ERROR, "Cannot open input file\n");
         return m_nErrCode;
@@ -116,6 +130,6 @@ int Demuxer::openInput() {
         m_vCodecCtxs.push_back(pCodecCtx);
     }
 
-    av_dump_format(m_pFmtCtx, 0, m_pFn, 0);
+    av_dump_format(m_pFmtCtx, 0, m_szFn.c_str(), 0);
     return m_nErrCode;
 }

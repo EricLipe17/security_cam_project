@@ -19,7 +19,7 @@ class Demuxer {
     AVFrame* m_pFrame;
     AVPacket* m_pPacket;
     AVDictionary* m_pOpts;
-    const char* m_pFn;
+    const std::string m_szFn;
     int m_nErrCode;
     std::string m_szErrMsg;
 
@@ -29,7 +29,11 @@ class Demuxer {
     void frame(FrameGen::push_type& yield);
 
    public:
-    Demuxer(const char* _pFn, AVDictionary* _pOpts);
+    Demuxer(const std::string& _szFn, AVDictionary* _pOpts);
+    Demuxer(Demuxer&& _demuxer);
+    Demuxer& operator=(Demuxer&&) = delete;
+    Demuxer(Demuxer&) = delete;
+    Demuxer& operator=(const Demuxer&) = delete;
     ~Demuxer();
     inline FrameGen::pull_type& Frame() { return m_frames; };
 };
