@@ -16,9 +16,10 @@ Demuxer::Demuxer(const char* _pFn, AVDictionary* _pOpts)
 Demuxer::~Demuxer() {
     for (int i = 0; i < m_vCodecCtxs.size(); i++) {
         avcodec_free_context(&m_vCodecCtxs.at(i));
-        // AVFrame* pFrame = m_buffer[i];
         av_frame_free(&m_pFrame);
     }
+
+    av_packet_free(&m_pPacket);
 
     avformat_close_input(&m_pFmtCtx);
 }
@@ -44,10 +45,7 @@ void Demuxer::frame(FrameGen::push_type& yield) {
             yield(std::make_pair(Frame::ERROR, nullptr));
         }
 
-        // std::size_t nSize = m_buffer.Size();
         while (m_nErrCode >= 0) {
-            // AVFrame* pFrame = m_buffer.GetNextFreeFrame();
-
             m_nErrCode = avcodec_receive_frame(pDecCtx, m_pFrame);
             if (m_nErrCode == AVERROR_EOF) yield(std::make_pair(Frame::END, nullptr));
             if (m_nErrCode == AVERROR(EAGAIN)) {
@@ -57,9 +55,6 @@ void Demuxer::frame(FrameGen::push_type& yield) {
                 yield(std::make_pair(Frame::ERROR, nullptr));
 
             m_pFrame->pts = m_pFrame->best_effort_timestamp;
-            // m_buffer.IncrementPtr();
-            // m_buffer.AllocFrame();
-            // TODO: the muxer needs to get the frame at this point in time to write it.
             yield(std::make_pair(nStreamIndex, m_pFrame));
         }
     }

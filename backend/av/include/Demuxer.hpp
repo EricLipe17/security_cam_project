@@ -16,7 +16,6 @@ class Demuxer {
    public:
     AVFormatContext* m_pFmtCtx;
     std::vector<AVCodecContext*> m_vCodecCtxs;
-    // FrameBuffer m_buffer;
     AVFrame* m_pFrame;
     AVPacket* m_pPacket;
     AVDictionary* m_pOpts;
