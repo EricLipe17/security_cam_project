@@ -7,7 +7,11 @@ void Muxer::openOutput() {
     const AVCodec* pEncoder;
     unsigned int nIndex;
 
-    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, nullptr, m_szFn.c_str());
+    AVOutputFormat fmt;
+
+    // Added "segment" here to indicate to the FmtCtx that we are segmenting the output. Remove this
+    // if using HLS.
+    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, "segment", m_szFn.c_str());
     if (!m_pFmtCtx) {
         av_log(nullptr, AV_LOG_ERROR, "Could not create output context\n");
         // return AVERROR_UNKNOWN;
@@ -45,7 +49,7 @@ void Muxer::openOutput() {
                 // return AVERROR(ENOMEM);
             }
 
-            pEncCtx->thread_count = 6;
+            pEncCtx->thread_count = 2;
 
             /* In this example, we transcode to same properties (picture size,
              * sample rate etc.). These properties can be changed for output
@@ -122,9 +126,13 @@ void Muxer::openOutput() {
     AVDictionary* pOpts = nullptr;
 
     // Minimal HLS params to segment a file via HLS
-    av_dict_set(&pOpts, "hls_time", "10", 0);
-    av_dict_set(&pOpts, "hls_segment_size", "500000", 0);
-    av_dict_set(&pOpts, "hls_list_size", "0", 0);
+    // av_dict_set(&pOpts, "hls_time", "10", 0);
+    // av_dict_set(&pOpts, "hls_segment_size", "500000", 0);
+    // av_dict_set(&pOpts, "hls_list_size", "0", 0);
+
+    // Minimal standard container segment params
+    av_dict_set(&pOpts, "segment_time", "10", 0);
+    av_dict_set(&pOpts, "strftime", "1", 0);
     m_nErrCode = avformat_write_header(m_pFmtCtx, &pOpts);
     if (m_nErrCode < 0) {
         av_log(nullptr, AV_LOG_ERROR, "Error occurred when opening output file\n");

@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
     Demuxer demux("/home/eric/Downloads/sample_1280x720_surfing_with_audio.mp4", nullptr);
-    Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "sample_1280x720_surfing_with_audio_new.m3u8",
+    Muxer mux(demux.m_pFmtCtx, demux.m_vCodecCtxs, "out_%Y:%m:%d %H:%M:%S.mp4",
               nullptr);
     int nErrCode = 0;
     for (auto& pair : demux.Frame()) {
