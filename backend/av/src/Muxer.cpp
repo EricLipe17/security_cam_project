@@ -7,11 +7,11 @@ void Muxer::openOutput() {
     const AVCodec* pEncoder;
     unsigned int nIndex;
 
-    AVOutputFormat fmt;
-
     // Added "segment" here to indicate to the FmtCtx that we are segmenting the output. Remove this
     // if using HLS.
-    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, "segment", m_szFn.c_str());
+
+    // This correcly segments the output, but it does not include audio.
+    avformat_alloc_output_context2(&m_pFmtCtx, nullptr, "ssegment", m_szFn.c_str());
     if (!m_pFmtCtx) {
         av_log(nullptr, AV_LOG_ERROR, "Could not create output context\n");
         // return AVERROR_UNKNOWN;
